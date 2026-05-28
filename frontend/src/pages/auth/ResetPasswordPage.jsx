@@ -63,7 +63,7 @@ const ResetPasswordPage = () => {
 
                 .page { min-height: 100vh; display: flex; flex-direction: column; background: #FADA5E; }
                 .top-bar { padding: 1.5rem 2.5rem; display: flex; align-items: center; }
-                .top-bar img { height: 32px; cursor: pointer; }
+                .top-bar img { height: 40px; cursor: pointer; }
                 .center { flex: 1; display: flex; align-items: center; justify-content: center; padding: 2rem; }
                 .card {
                     background: #fff; border-radius: 28px;
