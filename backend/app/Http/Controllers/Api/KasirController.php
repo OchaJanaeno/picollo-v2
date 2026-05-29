@@ -11,7 +11,7 @@ use Illuminate\Validation\Rules\Password as PasswordRule;
 
 class KasirController extends Controller
 {
-    // ── GET semua kasir milik outlet admin ────────────────
+    // GET semua kasir milik outlet admin
     public function index(Request $request)
     {
         $outletIds = $request->user()->outlets()->pluck('outlets.id');
@@ -36,7 +36,7 @@ class KasirController extends Controller
         ]);
     }
 
-    // ── GET detail satu kasir ─────────────────────────────
+    // GET detail satu kasir
     public function show(Request $request, $id)
     {
         $outletIds = $request->user()->outlets()->pluck('outlets.id');
@@ -59,7 +59,7 @@ class KasirController extends Controller
         ]);
     }
 
-    // ── POST buat akun kasir baru ─────────────────────────
+    // POST buat akun kasir baru
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -129,7 +129,7 @@ class KasirController extends Controller
         ], 201);
     }
 
-    // ── PUT update kasir ──────────────────────────────────
+    // PUT update kasir
     public function update(Request $request, $id)
     {
         $outletIds = $request->user()->outlets()->pluck('outlets.id');
@@ -195,7 +195,7 @@ class KasirController extends Controller
         ]);
     }
 
-    // ── DELETE kasir ──────────────────────────────────────
+    // DELETE kasir
     public function destroy(Request $request, $id)
     {
         $outletIds = $request->user()->outlets()->pluck('outlets.id');
@@ -212,7 +212,6 @@ class KasirController extends Controller
         }
 
         $kasir->outlets()->detach();
-        $kasir->tokens()->delete();
         $kasir->delete();
 
         return response()->json([

@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Validator;
 
 class ProductController extends Controller
 {
-    // ── GET semua produk ──────────────────────────────────
+    // GET semua produk
     public function index(Request $request)
     {
         $outletIds = $request->user()->outlets()->pluck('outlets.id');
@@ -25,7 +25,7 @@ class ProductController extends Controller
         ]);
     }
 
-    // ── GET detail produk ─────────────────────────────────
+    // GET detail produk
     public function show(Request $request, $id)
     {
         $outletIds = $request->user()->outlets()->pluck('outlets.id');
@@ -47,7 +47,7 @@ class ProductController extends Controller
         ]);
     }
 
-    // ── POST buat produk baru ─────────────────────────────
+    // POST buat produk baru
     public function store(Request $request)
     {
         $outletIds = $request->user()->outlets()->pluck('outlets.id');
@@ -97,7 +97,7 @@ class ProductController extends Controller
         ], 201);
     }
 
-    // ── PUT update produk ─────────────────────────────────
+    // PUT update produk
     public function update(Request $request, $id)
     {
         $outletIds = $request->user()->outlets()->pluck('outlets.id');
@@ -145,7 +145,7 @@ class ProductController extends Controller
         ]);
     }
 
-    // ── DELETE produk ─────────────────────────────────────
+    // DELETE produk
     public function destroy(Request $request, $id)
     {
         $outletIds = $request->user()->outlets()->pluck('outlets.id');

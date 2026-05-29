@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Validator;
 
 class DailyRecapController extends Controller
 {
-    //GET semua rekap
+    // GET semua rekap
     public function index(Request $request)
     {
         $user      = $request->user();
@@ -31,7 +31,7 @@ class DailyRecapController extends Controller
         ]);
     }
 
-    //GET detail rekap
+    // GET detail rekap
     public function show(Request $request, $id)
     {
         $outletIds = $request->user()->outlets()->pluck('outlets.id');
@@ -53,7 +53,7 @@ class DailyRecapController extends Controller
         ]);
     }
 
-    //POST submit rekap harian
+    // POST submit rekap harian
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -139,7 +139,7 @@ class DailyRecapController extends Controller
         ], 201);
     }
 
-    //PATCH approve rekap (admin only)
+    // PATCH approve rekap (admin only)
     public function approve(Request $request, $id)
     {
         $outletIds = $request->user()->outlets()->pluck('outlets.id');

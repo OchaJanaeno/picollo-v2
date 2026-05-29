@@ -18,7 +18,7 @@ use Tymon\JWTAuth\Exceptions\JWTException;
 
 class AuthController extends Controller
 {
-    //REGISTER
+    // REGISTER
     public function register(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -84,7 +84,7 @@ class AuthController extends Controller
         ], 201);
     }
 
-    //LOGIN
+    // LOGIN
     public function login(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -139,7 +139,7 @@ class AuthController extends Controller
         ]);
     }
 
-    //LOGOUT
+    // LOGOUT
     public function logout()
     {
         try {
@@ -156,7 +156,7 @@ class AuthController extends Controller
         }
     }
 
-    //ME
+    // ME
     public function me()
     {
         $user = JWTAuth::user();
@@ -173,7 +173,7 @@ class AuthController extends Controller
         ]);
     }
 
-    //REFRESH TOKEN
+    // REFRESH TOKEN
     public function refresh()
     {
         try {
@@ -192,7 +192,7 @@ class AuthController extends Controller
         }
     }
 
-    //FORGOT PASSWORD
+    // FORGOT PASSWORD
     public function forgotPassword(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -218,7 +218,7 @@ class AuthController extends Controller
         ]);
     }
 
-    //RESET PASSWORD
+    // RESET PASSWORD
     public function resetPassword(Request $request)
     {
         $validator = Validator::make($request->all(), [
