@@ -28,10 +28,6 @@ class AuthController extends Controller
                 'required',
                 'confirmed',
                 PasswordRule::min(8)
-                    ->letters()
-                    ->mixedCase()
-                    ->numbers()
-                    ->symbols()
             ],
             'nama_bisnis' => 'required|string|max:255',
         ], [
