@@ -8,15 +8,14 @@ export default {
     extend: {
       colors: {
         picollo: {
-          yellow: '#FFD700', // Kuning cerah khas Picollo
-          black: '#121212',  // Hitam elegan (bukan hitam pekat)
-          red: '#E63946',    // Merah tegas untuk aksen/error
-          white: '#FFFFFF',  // Putih bersih
-          zinc: '#1E1E1E',   // Warna abu-abu gelap untuk variasi sidebar
+          yellow: '#FFD700',
+          black: '#121212',
+          red: '#E63946',
+          white: '#FFFFFF',
+          zinc: '#1E1E1E',
         },
       },
       fontFamily: {
-        // Karena lo pakai logo yang "bold", font Syne atau Inter sangat cocok
         sans: ['Inter', 'sans-serif'],
       },
     },

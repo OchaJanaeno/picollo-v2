@@ -407,16 +407,16 @@ export default function AdminManajemenKasir() {
   const fetchData = async () => {
     setLoading(true)
     try {
-      setOutlets([
-        { id: 1, nama: 'Outlet Malang 1' },
-        { id: 2, nama: 'Outlet Malang 2' },
-        { id: 3, nama: 'Outlet Batu' },
-      ])
-      setData([
-        { id: 1, nama: 'Andi Santoso', email: 'andi@picollo.com', password_plain: 'Kasir@123', outlet: 'Outlet Malang 1', total_transaksi: 38, status: 'aktif', bergabung: '01 Apr 2026', foto: null },
-        { id: 2, nama: 'Citra Dewi',   email: 'citra@picollo.com', password_plain: 'Kasir@456', outlet: 'Outlet Malang 2', total_transaksi: 24, status: 'aktif', bergabung: '05 Apr 2026', foto: null },
-        { id: 3, nama: 'Doni Pratama', email: 'doni@picollo.com',  password_plain: 'Kasir@789', outlet: 'Outlet Batu',     total_transaksi: 31, status: 'nonaktif', bergabung: '10 Apr 2026', foto: null },
-      ])
+      // TODO: ambil data outlet dari backend
+// const outletRes = await outletService.getAll()
+// setOutlets(outletRes.data.data || [])
+
+// TODO: ambil data kasir dari backend
+// const kasirRes = await kasirService.getAll()
+// setData(kasirRes.data.data || [])
+
+setOutlets([])
+setData([])
     } catch { setData([]); setOutlets([]) }
     finally { setLoading(false) }
   }
