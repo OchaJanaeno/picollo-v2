@@ -16,7 +16,7 @@ class AuditorController extends Controller
     {
         $outletIds = $request->user()->outlets()->pluck('outlets.id');
 
-        $auditors = User::role(['auditor_internal', 'auditor_eksternal'])
+        $auditors = User::role('auditor')
             ->whereHas('outlets', fn($q) => $q->whereIn('outlets.id', $outletIds))
             ->with('outlets:id,nama,kode_outlet')
             ->get()
@@ -41,7 +41,7 @@ class AuditorController extends Controller
     {
         $outletIds = $request->user()->outlets()->pluck('outlets.id');
 
-        $auditor = User::role(['auditor_internal', 'auditor_eksternal'])
+        $auditor = User::role('auditor')
             ->whereHas('outlets', fn($q) => $q->whereIn('outlets.id', $outletIds))
             ->with('outlets:id,nama,kode_outlet')
             ->find($id);
@@ -134,7 +134,7 @@ class AuditorController extends Controller
     {
         $outletIds = $request->user()->outlets()->pluck('outlets.id');
 
-        $auditor = User::role(['auditor_internal', 'auditor_eksternal'])
+        $auditor = User::role('auditor')
             ->whereHas('outlets', fn($q) => $q->whereIn('outlets.id', $outletIds))
             ->find($id);
 
@@ -198,7 +198,7 @@ class AuditorController extends Controller
     {
         $outletIds = $request->user()->outlets()->pluck('outlets.id');
 
-        $auditor = User::role(['auditor_internal', 'auditor_eksternal'])
+        $auditor = User::role('auditor')
             ->whereHas('outlets', fn($q) => $q->whereIn('outlets.id', $outletIds))
             ->find($id);
 
@@ -210,7 +210,6 @@ class AuditorController extends Controller
         }
 
         $auditor->outlets()->detach();
-        $auditor->tokens()->delete();
         $auditor->delete();
 
         return response()->json([

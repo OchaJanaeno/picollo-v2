@@ -10,7 +10,7 @@ use Illuminate\Support\Str;
 
 class OutletController extends Controller
 {
-    // ── GET semua outlet milik admin ──────────────────────
+    // GET semua outlet milik admin
     public function index(Request $request)
     {
         $outlets = $request->user()
@@ -25,7 +25,7 @@ class OutletController extends Controller
         ]);
     }
 
-    // ── GET detail satu outlet ────────────────────────────
+    // GET detail satu outlet
     public function show(Request $request, $id)
     {
         $outlet = $request->user()
@@ -46,7 +46,7 @@ class OutletController extends Controller
         ]);
     }
 
-    // ── POST buat outlet baru ─────────────────────────────
+    // POST buat outlet baru
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -83,7 +83,7 @@ class OutletController extends Controller
         ], 201);
     }
 
-    // ── PUT update outlet ─────────────────────────────────
+    // PUT update outlet
     public function update(Request $request, $id)
     {
         $outlet = $request->user()->outlets()->find($id);
@@ -122,7 +122,7 @@ class OutletController extends Controller
         ]);
     }
 
-    // ── DELETE outlet ─────────────────────────────────────
+    // DELETE outlet
     public function destroy(Request $request, $id)
     {
         $outlet = $request->user()->outlets()->find($id);

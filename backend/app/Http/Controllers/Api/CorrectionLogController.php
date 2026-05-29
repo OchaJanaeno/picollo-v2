@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Validator;
 
 class CorrectionLogController extends Controller
 {
-    //GET semua log koreksi
+    // GET semua log koreksi
     public function index(Request $request)
     {
         $outletIds = $request->user()->outlets()->pluck('outlets.id');
@@ -29,7 +29,7 @@ class CorrectionLogController extends Controller
         ]);
     }
 
-    //POST buat koreksi transaksi
+    // POST buat koreksi transaksi
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -104,7 +104,7 @@ class CorrectionLogController extends Controller
         ], 201);
     }
 
-    //PATCH approve koreksi (admin)
+    // PATCH approve koreksi (admin)
     public function approve(Request $request, $id)
     {
         $outletIds = $request->user()->outlets()->pluck('outlets.id');

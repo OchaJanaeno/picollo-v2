@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Validator;
 
 class HashVerificationController extends Controller
 {
-    // ── GET semua hash verifikasi ─────────────────────────
+    // GET semua hash verifikasi
     public function index(Request $request)
     {
         $outletIds = $request->user()->outlets()->pluck('outlets.id');
@@ -32,7 +32,7 @@ class HashVerificationController extends Controller
         ]);
     }
 
-    // ── GET detail hash verifikasi ────────────────────────
+    // GET detail hash verifikasi
     public function show(Request $request, $id)
     {
         $outletIds = $request->user()->outlets()->pluck('outlets.id');
@@ -59,7 +59,7 @@ class HashVerificationController extends Controller
         ]);
     }
 
-    // ── POST verifikasi hash transaksi ────────────────────
+    // POST verifikasi hash transaksi
     public function verify(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -145,7 +145,7 @@ class HashVerificationController extends Controller
         ]);
     }
 
-    // ── POST verifikasi integritas seluruh chain ──────────
+    // POST verifikasi integritas seluruh chain
     public function verifyChain(Request $request)
     {
         $validator = Validator::make($request->all(), [

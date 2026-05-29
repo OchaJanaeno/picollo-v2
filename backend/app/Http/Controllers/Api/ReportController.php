@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Validator;
 
 class ReportController extends Controller
 {
-    // ── GET laporan keuangan ──────────────────────────────
+    // GET laporan keuangan
     public function index(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -94,7 +94,7 @@ class ReportController extends Controller
         ]);
     }
 
-    // ── GET export PDF ─────────────────────────────────────
+    // GET export PDF
     public function exportPdf(Request $request)
     {
         $validator = Validator::make($request->all(), [
