@@ -200,13 +200,6 @@ function ModalBuatKasir({ outlets, onClose, onSave }) {
             </select>
             {errors.outlet_id && <p className="text-xs text-red-500 mt-1">{errors.outlet_id}</p>}
           </div>
-
-          <div className="bg-green-50 border border-green-200 rounded-xl p-3">
-            <p className="text-green-700 text-xs">
-              ✅ Password tersimpan dan bisa dilihat lagi kapan saja via tombol
-              <strong> "Lihat Akun"</strong> di tabel.
-            </p>
-          </div>
         </div>
 
         <div className="px-6 py-4 border-t border-zinc-100 flex gap-2

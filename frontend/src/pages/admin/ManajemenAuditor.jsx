@@ -205,15 +205,6 @@ function ModalBuatAuditor({ onClose, onSave }) {
             </div>
             {errors.password && <p className="text-xs text-red-500 mt-1">{errors.password}</p>}
           </div>
-
-          {/* Info box */}
-          <div className="bg-blue-50 border border-blue-200 rounded-xl p-3">
-            <p className="text-blue-700 text-xs">
-              💡 Auditor akan login di halaman <strong>/login</strong> dengan email & password ini.
-              Akses auditor bersifat <strong>read-only</strong> — hanya bisa melihat data dan
-              memverifikasi hash transaksi.
-            </p>
-          </div>
         </div>
 
         {/* Footer modal */}
