@@ -34,17 +34,16 @@ export default function AdminPengaturan() {
   const [successPassword, setSuccessPassword] = useState(false)
 
   // Isi form dari store saat komponen mount
-  useEffect(() => {
-    if (user) {
-      setProfile({
-        nama:    user.nama    || '',
-        email:   user.email   || '',
-        telepon: user.telepon || '',
-      })
-      // Tampilkan foto dari store kalau ada
-      setFotoPreview(user.foto || null)
-    }
-  }, [user])
+useEffect(() => {
+  if (user) {
+    setProfile({
+      nama:    user.name    || user.nama    || '',
+      email:   user.email   || '',
+      telepon: user.phone   || user.telepon || '',
+    })
+    setFotoPreview(user.foto || user.avatar || null)
+  }
+}, [user])
 
   // Handle pilih file foto
   const handleFoto = (file) => {
