@@ -323,35 +323,21 @@ export default function ManajemenAuditor() {
   useEffect(() => { fetchData() }, [])
 
   const fetchData = async () => {
-    setLoading(true)
-    try {
-      // TODO: const res = await auditorService.getAll()
-      // setData(res.data.data || [])
+  setLoading(true)
 
-      // Dummy data sementara
-      setData([
-        {
-          id: 1,
-          nama: 'Budi Santoso',
-          email: 'budi@kap.com',
-          instansi: 'KAP Budi & Rekan',
-          status: 'aktif',
-          bergabung: '01 Apr 2026',
-          foto: null,
-        },
-        {
-          id: 2,
-          nama: 'Siti Rahayu',
-          email: 'siti@kap.com',
-          instansi: 'KAP Angin Segar',
-          status: 'nonaktif',
-          bergabung: '15 Apr 2026',
-          foto: null,
-        },
-      ])
-    } catch { setData([]) }
-    finally { setLoading(false) }
+  try {
+    // TODO: ambil data auditor dari backend
+    // const res = await auditorService.getAll()
+    // setData(res.data.data || [])
+
+    setData([])
+
+  } catch {
+    setData([])
+  } finally {
+    setLoading(false)
   }
+}
 
   // Toggle status aktif/nonaktif
   const handleToggle = (id) => {
@@ -419,33 +405,6 @@ export default function ManajemenAuditor() {
             </svg>
             Buat Akun Auditor
           </button>
-        </div>
-
-        {/* Info cara kerja */}
-        <div className="bg-blue-50 border border-blue-200 rounded-2xl p-5">
-          <div className="flex items-start gap-3">
-            <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center shrink-0">
-              <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor"
-                viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                  d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-              </svg>
-            </div>
-            <div>
-              <p className="text-blue-800 font-semibold text-sm mb-2">Cara Kerja Auditor</p>
-              <div className="space-y-1">
-                {[
-                  '1. Admin buat akun auditor (email + password)',
-                  '2. Bagikan kredensial ke auditor melalui saluran aman',
-                  '3. Auditor login di /login menggunakan email & password tersebut',
-                  '4. Auditor mendapat akses read-only → hanya bisa lihat data & verifikasi hash',
-                  '5. Admin bisa nonaktifkan akun kapan saja',
-                ].map((s, i) => (
-                  <p key={i} className="text-blue-700 text-xs">{s}</p>
-                ))}
-              </div>
-            </div>
-          </div>
         </div>
 
         {/* Stats */}
