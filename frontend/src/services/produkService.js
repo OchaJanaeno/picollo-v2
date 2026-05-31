@@ -1,4 +1,4 @@
-import api from '../api/axios'
+import api from '../api'
 
 export const productService = {
   getAll: () => api.get('/products'),

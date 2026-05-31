@@ -1,4 +1,4 @@
-import api from '../api/axios'
+import api from '../api'
 
 export const outletService = {
   getAll: () => api.get('/outlets'),
