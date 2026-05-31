@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import Layout from '../../components/Layout'
+import LoadingSpinner from '../../components/LoadingSpinner'
+import ErrorState from '../../components/ErrorState'
 
 // ── Modal Buat Akun Auditor ──
 // Sama konsepnya dengan buat akun kasir
@@ -306,6 +308,7 @@ export default function ManajemenAuditor() {
   // State untuk data auditor
   const [data, setData]         = useState([])
   const [loading, setLoading]   = useState(true)
+  const [error, setError]     = useState(null)
   const [search, setSearch]     = useState('')
   const [showBuat, setShowBuat] = useState(false)
   const [newAuditor, setNewAuditor] = useState(null) // untuk modal kredensial
@@ -359,7 +362,17 @@ export default function ManajemenAuditor() {
     aktif:    data.filter(a => a.status === 'aktif').length,
     nonaktif: data.filter(a => a.status === 'nonaktif').length,
   }
+  if (loading) return (
+    <Layout>
+      <LoadingSpinner/>
+    </Layout>
+  )
 
+  if (error) return (
+    <Layout>
+      <ErrorState message={error} onRetry={fetchData}/>
+    </Layout>
+  )
   return (
     <Layout>
       {/* Modal buat akun */}

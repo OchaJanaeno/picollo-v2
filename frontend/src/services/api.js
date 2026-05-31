@@ -1,28 +1,35 @@
-import axios from 'axios'
+import axios from 'axios';
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/api',
-  headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-})
+    baseURL: import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/api',
+    headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+    },
+});
 
-// Pakai token dari localStorage — key: 'token' (sesuai authStore)
+// Auto attach token ke setiap request
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token')
-  if (token) config.headers.Authorization = `Bearer ${token}`
-  return config
-})
-
-// Handle 401 — token expired → logout
-api.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      localStorage.removeItem('user')
-      localStorage.removeItem('token')
-      window.location.href = '/login'
+    const token = localStorage.getItem('token');
+    if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
     }
-    return Promise.reject(error)
-  }
-)
+    return config;
+});
 
-export default api
+// Handle response error global
+api.interceptors.response.use(
+    (response) => response,
+    (error) => {
+        if (error.response?.status === 401) {
+            // FIX: clear outlets juga saat 401
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            localStorage.removeItem('outlets');
+            window.location.href = '/login';
+        }
+        return Promise.reject(error);
+    }
+);
+
+export default api;

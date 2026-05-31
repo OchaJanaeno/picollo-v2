@@ -4,7 +4,7 @@ import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer, BarChart, Bar
 } from 'recharts'
-import api from '../../api/axios'
+import api from '../../api'
 
 const formatRupiah = (num) => {
   if (!num && num !== 0) return '-'

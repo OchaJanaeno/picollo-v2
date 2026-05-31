@@ -1,7 +1,9 @@
-import api from './api'
+import api from '../api'
+
 export const transaksiService = {
-  getAll:    (params) => api.get('/transactions', { params }),
-  getById:   (id)     => api.get(`/transactions/${id}`),
-  create:    (data)   => api.post('/transactions', data),
-  getProduk: ()       => api.get('/products'),
+  getAll: () => api.get('/transactions'),
+  getById: (id) => api.get(`/transactions/${id}`),
+  create: (data) => api.post('/transactions', data),
+  update: (id, data) => api.put(`/transactions/${id}`, data),
+  delete: (id) => api.delete(`/transactions/${id}`)
 }
