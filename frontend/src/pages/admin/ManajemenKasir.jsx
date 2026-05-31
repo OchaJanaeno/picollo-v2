@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import Layout from '../../components/Layout'
+import LoadingSpinner from '../../components/LoadingSpinner'
+import ErrorState from '../../components/ErrorState'
 
 function ModalBuatKasir({ outlets, onClose, onSave }) {
   const [form, setForm] = useState({

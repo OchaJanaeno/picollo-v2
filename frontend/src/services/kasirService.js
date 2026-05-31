@@ -1,7 +1,9 @@
-import api from './api'
+import api from '../api'
+
 export const kasirService = {
-  getAll: (params) => api.get('/admin/cashiers', { params }),
-  getById: (id) => api.get(`/admin/cashiers/${id}`),
-  toggleStatus: (id) => api.patch(`/admin/cashiers/${id}/toggle-status`),
-  getActivity: (id) => api.get(`/admin/cashiers/${id}/activity`),
+  getAll: () => api.get('/kasir'),
+  getById: (id) => api.get(`/kasir/${id}`),
+  create: (data) => api.post('/kasir', data),
+  update: (id, data) => api.put(`/kasir/${id}`, data),
+  delete: (id) => api.delete(`/kasir/${id}`)
 }

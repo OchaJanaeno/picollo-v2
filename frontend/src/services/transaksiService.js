@@ -1,7 +1,9 @@
-import api from './api'
+import api from '../api/axios'
+
 export const transaksiService = {
-  getAll: (params) => api.get('/admin/transactions', { params }),
-  getById: (id) => api.get(`/admin/transactions/${id}`),
-  create: (data) => api.post('/kasir/transactions', data),
-  getProduk: () => api.get('/kasir/products'),
+  getAll: () => api.get('/transactions'),
+  getById: (id) => api.get(`/transactions/${id}`),
+  create: (data) => api.post('/transactions', data),
+  update: (id, data) => api.put(`/transactions/${id}`, data),
+  delete: (id) => api.delete(`/transactions/${id}`)
 }
