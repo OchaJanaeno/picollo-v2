@@ -1,26 +1,35 @@
 import { create } from 'zustand';
 
 const useAuthStore = create((set) => ({
-    user:  JSON.parse(localStorage.getItem('user'))  || null,
-    token: localStorage.getItem('token') || null,
+    user:    JSON.parse(localStorage.getItem('user'))    || null,
+    token:   localStorage.getItem('token')               || null,
+    outlets: JSON.parse(localStorage.getItem('outlets')) || [],
 
-    setAuth: (user, token) => {
-        localStorage.setItem('user',  JSON.stringify(user));
-        localStorage.setItem('token', token);
-        set({ user, token });
+    setAuth: (user, token, outlets = []) => {
+        localStorage.setItem('user',    JSON.stringify(user));
+        localStorage.setItem('token',   token);
+        localStorage.setItem('outlets', JSON.stringify(outlets));
+        set({ user, token, outlets });
+    },
+
+    // Kalau perlu update outlets saja (misal setelah tambah outlet baru)
+    setOutlets: (outlets) => {
+        localStorage.setItem('outlets', JSON.stringify(outlets));
+        set({ outlets });
     },
 
     logout: () => {
         localStorage.removeItem('user');
         localStorage.removeItem('token');
-        set({ user: null, token: null });
+        localStorage.removeItem('outlets');
+        set({ user: null, token: null, outlets: [] });
     },
 
-    // alias supaya clearAuth tetap jalan kalau ada yang pakai
     clearAuth: () => {
         localStorage.removeItem('user');
         localStorage.removeItem('token');
-        set({ user: null, token: null });
+        localStorage.removeItem('outlets');
+        set({ user: null, token: null, outlets: [] });
     },
 }));
 

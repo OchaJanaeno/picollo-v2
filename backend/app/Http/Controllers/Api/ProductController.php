@@ -52,6 +52,14 @@ class ProductController extends Controller
     {
         $outletIds = $request->user()->outlets()->pluck('outlets.id');
 
+        // FIX: Jika admin tidak punya outlet, langsung tolak sebelum validasi 'in:' kosong error
+        if ($outletIds->isEmpty()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Anda belum memiliki outlet. Buat outlet terlebih dahulu.',
+            ], 403);
+        }
+
         $validator = Validator::make($request->all(), [
             'outlet_id'  => 'required|integer|in:' . $outletIds->join(','),
             'nama'       => 'required|string|max:255',

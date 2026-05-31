@@ -22,8 +22,10 @@ api.interceptors.response.use(
     (response) => response,
     (error) => {
         if (error.response?.status === 401) {
+            // FIX: clear outlets juga saat 401
             localStorage.removeItem('token');
             localStorage.removeItem('user');
+            localStorage.removeItem('outlets');
             window.location.href = '/login';
         }
         return Promise.reject(error);

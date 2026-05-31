@@ -20,7 +20,7 @@ class DailyRecapController extends Controller
             ->with(['outlet:id,nama', 'kasir:id,name', 'approvedBy:id,name'])
             ->orderByDesc('tanggal');
 
-        // Kasir hanya lihat rekap sendiri
+        // Kasir hanya lihat rekap milik sendiri
         if ($user->hasRole('kasir')) {
             $query->where('user_id', $user->id);
         }
@@ -83,7 +83,7 @@ class DailyRecapController extends Controller
             ], 403);
         }
 
-        // Cek apakah rekap tanggal ini sudah ada
+        // Cek apakah rekap tanggal ini sudah ada untuk user + outlet yang sama
         $existing = DailyRecap::where('outlet_id', $request->outlet_id)
             ->where('user_id', $request->user()->id)
             ->where('tanggal', $request->tanggal)
@@ -96,9 +96,8 @@ class DailyRecapController extends Controller
             ], 422);
         }
 
-        // Hitung otomatis dari transaksi
-        $transaksi = Transaction::where('outlet_id', $request->outlet_id)
-            ->where('user_id', $request->user()->id)
+        // Hitung otomatis dari transaksi sukses di hari tersebut
+        $transaksi      = Transaction::where('outlet_id', $request->outlet_id)
             ->where('status', 'success')
             ->whereDate('created_at', $request->tanggal)
             ->get();
@@ -108,15 +107,23 @@ class DailyRecapController extends Controller
         $totalQris      = $transaksi->where('metode_pembayaran', 'qris')->sum('total_amount');
         $totalTunai     = $transaksi->where('metode_pembayaran', 'tunai')->sum('total_amount');
 
-        // Generate hash rekap
-        $hashData  = json_encode([
-            'outlet_id'       => $request->outlet_id,
-            'user_id'         => $request->user()->id,
-            'tanggal'         => $request->tanggal,
-            'total_transaksi' => $totalTransaksi,
-            'total_amount'    => $totalAmount,
+        // Ambil hash rekap hari sebelumnya untuk membentuk chain antar hari
+        // Gunakan tanggal < tanggal yang disubmit agar tidak ambil rekap hari yang sama
+        $previousHash = DailyRecap::where('outlet_id', $request->outlet_id)
+            ->where('tanggal', '<', $request->tanggal)
+            ->orderByDesc('tanggal')
+            ->value('hash_rekap');
+
+        // Susun signature: Outlet|Tanggal|Amount|TotalTrx|PrevHash
+        $signature = implode('|', [
+            $request->outlet_id,
+            $request->tanggal,
+            $totalAmount,
+            $totalTransaksi,
+            $previousHash ?? 'FIRST_RECAP',
         ]);
-        $hashRekap = hash('sha256', $hashData);
+
+        $hashRekap = hash('sha256', $signature);
 
         $recap = DailyRecap::create([
             'outlet_id'       => $request->outlet_id,
@@ -139,9 +146,17 @@ class DailyRecapController extends Controller
         ], 201);
     }
 
-    // PATCH approve rekap (admin only)
+    // PATCH approve rekap — hanya admin
     public function approve(Request $request, $id)
     {
+        // Cek role menggunakan Spatie HasRoles
+        if (!$request->user()->hasRole('admin')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Akses ditolak. Hanya Admin yang bisa approve rekap.',
+            ], 403);
+        }
+
         $outletIds = $request->user()->outlets()->pluck('outlets.id');
 
         $recap = DailyRecap::whereIn('outlet_id', $outletIds)->find($id);
@@ -153,7 +168,8 @@ class DailyRecapController extends Controller
             ], 404);
         }
 
-        if ($recap->status === 'approved') {
+        // Hanya rekap berstatus 'submitted' yang bisa di-approve
+        if ($recap->status !== 'submitted') {
             return response()->json([
                 'success' => false,
                 'message' => 'Rekap tidak bisa diapprove. Status saat ini: ' . $recap->status . '.',
@@ -161,9 +177,8 @@ class DailyRecapController extends Controller
         }
 
         $recap->update([
-            'status'       => 'approved',
-            'approved_by'  => $request->user()->id,
-            
+            'status'      => 'approved',
+            'approved_by' => $request->user()->id,
         ]);
 
         return response()->json([

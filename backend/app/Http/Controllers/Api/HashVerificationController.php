@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Validator;
 
 class HashVerificationController extends Controller
 {
-    // GET semua hash verifikasi
+    // GET semua hash verifikasi milik outlet user
     public function index(Request $request)
     {
         $outletIds = $request->user()->outlets()->pluck('outlets.id');
@@ -59,22 +59,15 @@ class HashVerificationController extends Controller
         ]);
     }
 
-    // POST verifikasi hash transaksi
+    // POST verifikasi hash satu transaksi
     public function verify(Request $request)
     {
         $validator = Validator::make($request->all(), [
             'transaction_id' => 'required|integer|exists:transactions,id',
-        ], [
-            'transaction_id.required' => 'ID transaksi wajib diisi.',
-            'transaction_id.exists'   => 'Transaksi tidak ditemukan.',
         ]);
 
         if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Validasi gagal.',
-                'errors'  => $validator->errors(),
-            ], 422);
+            return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
         }
 
         $outletIds   = $request->user()->outlets()->pluck('outlets.id');
@@ -82,70 +75,48 @@ class HashVerificationController extends Controller
             ->with('hashVerification')
             ->find($request->transaction_id);
 
-        if (!$transaction) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Transaksi tidak ditemukan.',
-            ], 404);
+        if (!$transaction || !$transaction->hashVerification) {
+            return response()->json(['success' => false, 'message' => 'Data tidak ditemukan.'], 404);
         }
 
-        if (!$transaction->hashVerification) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Hash untuk transaksi ini belum ada.',
-            ], 404);
-        }
-
-        // Regenerate hash dari data transaksi
-        $hashData = json_encode([
-            'transaction_code' => $transaction->transaction_code,
-            'outlet_id'        => $transaction->outlet_id,
-            'total_amount'     => $transaction->total_amount,
-            'created_at'       => $transaction->created_at,
+        $prevHash  = $transaction->hashVerification->previous_hash ?? '';
+        $signature = implode('|', [
+            $transaction->transaction_code,
+            $transaction->outlet_id,
+            $transaction->total_amount,
+            $transaction->created_at->timestamp,
+            $prevHash,
         ]);
-        $recomputedHash = hash('sha256', $hashData);
-        $storedHash     = $transaction->hashVerification->hash_sha256;
 
-        // Bandingkan hash
-        $isValid = hash_equals($storedHash, $recomputedHash);
-        $status  = $isValid ? 'verified' : 'fraud_detected';
+        $recomputed = hash('sha256', $signature);
+        $storedHash = $transaction->hashVerification->hash_sha256;
+        $isValid    = hash_equals($storedHash, $recomputed);
+        $status     = $isValid ? 'verified' : 'fraud_detected';
 
-        // Update status verifikasi
         $transaction->hashVerification->update([
             'status'      => $status,
             'verified_by' => $request->user()->id,
             'verified_at' => now(),
         ]);
 
-        // Catat ke audit log
         AuditLog::create([
             'user_id'     => $request->user()->id,
             'action'      => 'verify_hash',
             'entity_type' => 'Transaction',
             'entity_id'   => $transaction->id,
-            'new_value'   => ['status' => $status, 'hash' => $storedHash],
+            'new_value'   => ['status' => $status],
             'ip_address'  => $request->ip(),
             'user_agent'  => $request->userAgent(),
         ]);
 
         return response()->json([
             'success' => true,
-            'message' => $isValid
-                ? 'Hash valid! Transaksi tidak dimanipulasi.'
-                : '⚠️ FRAUD DETECTED! Hash tidak cocok, transaksi kemungkinan dimanipulasi!',
-            'data'    => [
-                'transaction_code' => $transaction->transaction_code,
-                'stored_hash'      => $storedHash,
-                'recomputed_hash'  => $recomputedHash,
-                'is_valid'         => $isValid,
-                'status'           => $status,
-                'verified_by'      => $request->user()->name,
-                'verified_at'      => now(),
-            ],
+            'message' => $isValid ? 'Hash valid!' : '⚠️ FRAUD DETECTED!',
+            'data'    => ['is_valid' => $isValid, 'status' => $status],
         ]);
     }
 
-    // POST verifikasi integritas seluruh chain
+    // POST verifikasi integritas seluruh chain (Audit Masal Harian)
     public function verifyChain(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -154,73 +125,88 @@ class HashVerificationController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Validasi gagal.',
-                'errors'  => $validator->errors(),
-            ], 422);
+            return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
         }
 
-        $outletIds = $request->user()->outlets()->pluck('outlets.id');
-        if (!$outletIds->contains($request->outlet_id)) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Anda tidak memiliki akses ke outlet tersebut.',
-            ], 403);
+        // Pastikan user punya akses ke outlet ini
+        $userOutletIds = $request->user()->outlets()->pluck('outlets.id');
+        if (!$userOutletIds->contains($request->outlet_id)) {
+            return response()->json(['success' => false, 'message' => 'Akses ditolak.'], 403);
         }
 
-        // Ambil semua transaksi hari itu urut by id
+        // Hanya transaksi success yang masuk chain — voided dilewati
         $transactions = Transaction::where('outlet_id', $request->outlet_id)
             ->where('status', 'success')
             ->whereDate('created_at', $request->tanggal)
             ->with('hashVerification')
-            ->orderBy('id')
+            ->orderBy('id', 'asc')
             ->get();
 
         if ($transactions->isEmpty()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Tidak ada transaksi pada tanggal tersebut.',
-            ], 404);
+            return response()->json(['success' => false, 'message' => 'Tidak ada transaksi.'], 404);
         }
 
-        $chainValid  = true;
-        $chainResult = [];
-        $prevHash    = null;
+        $chainValid       = true;
+        $chainResult      = [];
+        $expectedPrevHash = null;
 
-        foreach ($transactions as $trx) {
-            $hashData = json_encode([
-                'transaction_code' => $trx->transaction_code,
-                'outlet_id'        => $trx->outlet_id,
-                'total_amount'     => $trx->total_amount,
-                'created_at'       => $trx->created_at,
+        foreach ($transactions as $index => $trx) {
+            $verification = $trx->hashVerification;
+
+            // Null-safe: jika verifikasi tidak ada, langsung tandai invalid
+            if (!$verification) {
+                $chainValid    = false;
+                $chainResult[] = [
+                    'transaction_code' => $trx->transaction_code,
+                    'data_integrity'   => false,
+                    'chain_integrity'  => false,
+                    'is_valid'         => false,
+                    'note'             => 'Hash verification record tidak ditemukan.',
+                ];
+                // expectedPrevHash tetap null — chain putus di sini
+                continue;
+            }
+
+            $storedHash  = $verification->hash_sha256 ?? '';
+            $currentPrev = $verification->previous_hash ?? '';
+
+            // Recompute hash dari snapshot data transaksi
+            $signature  = implode('|', [
+                $trx->transaction_code,
+                $trx->outlet_id,
+                $trx->total_amount,
+                $trx->created_at->timestamp,
+                $currentPrev,
             ]);
-            $recomputedHash = hash('sha256', $hashData);
-            $storedHash     = $trx->hashVerification?->hash_sha256;
-            $isValid        = $storedHash && hash_equals($storedHash, $recomputedHash);
+            $recomputed = hash('sha256', $signature);
 
-            if (!$isValid) $chainValid = false;
+            // 1. Cek integritas data (hash cocok dengan snapshot)
+            $isDataValid = !empty($storedHash) && hash_equals($storedHash, $recomputed);
+
+            // 2. Cek integritas chain (previous_hash cocok dengan hash transaksi sebelumnya)
+            $isChainLinked = ($index === 0)
+                ? true
+                : (!empty($currentPrev) && hash_equals($currentPrev, $expectedPrevHash ?? ''));
+
+            $currentTrxValid = $isDataValid && $isChainLinked;
+            if (!$currentTrxValid) {
+                $chainValid = false;
+            }
 
             $chainResult[] = [
                 'transaction_code' => $trx->transaction_code,
-                'stored_hash'      => $storedHash,
-                'recomputed_hash'  => $recomputedHash,
-                'prev_hash'        => $prevHash,
-                'is_valid'         => $isValid,
+                'data_integrity'   => $isDataValid,
+                'chain_integrity'  => $isChainLinked,
+                'is_valid'         => $currentTrxValid,
             ];
 
-            $prevHash = $storedHash;
+            $expectedPrevHash = $storedHash;
         }
 
         return response()->json([
             'success' => true,
-            'message' => $chainValid
-                ? 'Seluruh chain valid! Tidak ada manipulasi data.'
-                : '⚠️ Chain rusak! Ada transaksi yang kemungkinan dimanipulasi.',
+            'message' => $chainValid ? 'Seluruh chain valid!' : '⚠️ Chain rusak!',
             'data'    => [
-                'outlet_id'    => $request->outlet_id,
-                'tanggal'      => $request->tanggal,
-                'total_trx'    => $transactions->count(),
                 'chain_valid'  => $chainValid,
                 'chain_detail' => $chainResult,
             ],

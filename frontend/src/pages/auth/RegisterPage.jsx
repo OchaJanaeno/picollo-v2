@@ -35,8 +35,8 @@ const RegisterPage = () => {
         setErrors({});
         try {
             const res = await api.post('/auth/register', form);
-            const { user, token } = res.data.data;
-            setAuth(user, token);
+            const { user, token, outlet } = res.data.data;
+            setAuth(user, token, outlet ? [outlet] : []);
             navigate('/admin/dashboard');
         } catch (err) {
             if (err.response?.data?.errors) {

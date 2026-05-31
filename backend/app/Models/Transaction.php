@@ -23,7 +23,7 @@ class Transaction extends Model
 
     public function outlet()
     {
-        return $this->belongsTo(Outlet::class);
+        return $this->belongsTo(Outlet::class, 'outlet_id');
     }
 
     public function kasir()
