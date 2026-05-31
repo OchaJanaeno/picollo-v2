@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import Layout from '../../components/Layout'
-import api from '../../api'
+import api from '../../services/api'
 
 const formatRupiah = (num) => {
   if (!num && num !== 0) return 'Rp 0'

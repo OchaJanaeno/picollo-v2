@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import Layout from '../../components/Layout'
-import { produkService } from '../../services/produkService'
+import { productService } from '../../services/produkService'
 import LoadingSpinner from '../../components/LoadingSpinner'
 import ErrorState from '../../components/ErrorState'
 

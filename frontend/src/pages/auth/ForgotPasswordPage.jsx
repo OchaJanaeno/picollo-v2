@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import api from '../../api';
+import api from '../../services/api'
 
 const ForgotPasswordPage = () => {
     const navigate = useNavigate();
