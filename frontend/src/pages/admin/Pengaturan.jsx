@@ -102,7 +102,7 @@ useEffect(() => {
         telepon: profile.telepon,
         foto:    fotoPreview, // URL base64 atau null
       }
-      setAuth(updatedUser, token, role)
+      setAuth(updatedUser, token)
       setFotoFile(null) // reset file setelah disimpan
       setSuccessProfile(true)
       setTimeout(() => setSuccessProfile(false), 3000)

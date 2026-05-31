@@ -23,7 +23,19 @@ const LoginPage = () => {
         try {
             const res = await api.post('/auth/login', form);
             const { user, token } = res.data.data;
-            setAuth(user, token);
+
+            // FIX: Fetch outlets setelah login supaya dashboard tidak kosong
+            // /auth/me sudah return outlets di response-nya
+            let outlets = [];
+            try {
+                const meRes = await api.get('/auth/me', {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                outlets = meRes.data.data?.outlets || [];
+            } catch { /* outlets tetap [] kalau gagal */ }
+
+            setAuth(user, token, outlets);
+
             if (user.role === 'admin') navigate('/admin/dashboard');
             else if (user.role === 'kasir') navigate('/kasir/dashboard');
             else if (user.role === 'auditor') navigate('/auditor/dashboard');
