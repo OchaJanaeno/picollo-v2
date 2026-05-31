@@ -13,20 +13,17 @@ class DashboardController extends Controller
 {
     public function adminDashboard(Request $request)
     {
-        $user = $request->user();
-
-        // Ambil outlet milik admin ini
+        $user      = $request->user();
         $outletIds = $user->outlets()->pluck('outlets.id');
-
-        //STAT CARDS
 
         // Total pendapatan keseluruhan (transaksi success)
         $totalPendapatan = Transaction::whereIn('outlet_id', $outletIds)
             ->where('status', 'success')
             ->sum('total_amount');
 
-        // Total transaksi hari ini
+        // FIX: Total transaksi hari ini — hanya status success agar konsisten dengan pendapatan
         $transaksiHariIni = Transaction::whereIn('outlet_id', $outletIds)
+            ->where('status', 'success')
             ->whereDate('created_at', today())
             ->count();
 
@@ -54,8 +51,7 @@ class DashboardController extends Controller
             ->get()
             ->sum(fn($p) => ($p->harga - $p->modal) * $p->stok);
 
-        //GRAFIK 7 HARI TERAKHIR
-
+        // Grafik 7 hari terakhir
         $grafikPendapatan = Transaction::whereIn('outlet_id', $outletIds)
             ->where('status', 'success')
             ->where('created_at', '>=', now()->subDays(6)->startOfDay())
@@ -68,36 +64,33 @@ class DashboardController extends Controller
             ->orderBy('tanggal')
             ->get();
 
-        //TRANSAKSI TERBARU
-
+        // Transaksi terbaru (semua status, bukan hanya success — agar kasir tahu ada void)
         $transaksiTerbaru = Transaction::whereIn('outlet_id', $outletIds)
             ->with(['outlet:id,nama', 'kasir:id,name'])
             ->orderByDesc('created_at')
             ->limit(5)
             ->get()
             ->map(fn($t) => [
-                'id'                  => $t->id,
-                'transaction_code'    => $t->transaction_code,
-                'outlet'              => $t->outlet?->nama,
-                'kasir'               => $t->kasir?->name,
-                'total_amount'        => $t->total_amount,
-                'metode_pembayaran'   => $t->metode_pembayaran,
-                'status'              => $t->status,
-                'created_at'          => $t->created_at,
+                'id'                => $t->id,
+                'transaction_code'  => $t->transaction_code,
+                'outlet'            => $t->outlet?->nama,
+                'kasir'             => $t->kasir?->name,
+                'total_amount'      => $t->total_amount,
+                'metode_pembayaran' => $t->metode_pembayaran,
+                'status'            => $t->status,
+                'created_at'        => $t->created_at,
             ]);
-
-        //RESPONSE
 
         return response()->json([
             'success' => true,
             'data'    => [
                 'stat_cards' => [
-                    'total_pendapatan'     => $totalPendapatan,
-                    'pendapatan_hari_ini'  => $pendapatanHariIni,
-                    'transaksi_hari_ini'   => $transaksiHariIni,
-                    'total_produk_aktif'   => $totalProdukAktif,
-                    'total_outlet_aktif'   => $totalOutletAktif,
-                    'estimasi_keuntungan'  => $estimasiKeuntungan,
+                    'total_pendapatan'    => $totalPendapatan,
+                    'pendapatan_hari_ini' => $pendapatanHariIni,
+                    'transaksi_hari_ini'  => $transaksiHariIni,
+                    'total_produk_aktif'  => $totalProdukAktif,
+                    'total_outlet_aktif'  => $totalOutletAktif,
+                    'estimasi_keuntungan' => $estimasiKeuntungan,
                 ],
                 'grafik_pendapatan' => $grafikPendapatan,
                 'transaksi_terbaru' => $transaksiTerbaru,

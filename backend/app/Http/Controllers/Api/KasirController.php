@@ -21,13 +21,13 @@ class KasirController extends Controller
             ->with('outlets:id,nama,kode_outlet')
             ->get()
             ->map(fn($k) => [
-                'id'          => $k->id,
-                'name'        => $k->name,
-                'email'       => $k->email,
-                'no_telepon'  => $k->no_telepon,
-                'is_active'   => $k->is_active,
+                'id'            => $k->id,
+                'name'          => $k->name,
+                'email'         => $k->email,
+                'no_telepon'    => $k->no_telepon,
+                'is_active'     => $k->is_active,
                 'last_login_at' => $k->last_login_at,
-                'outlets'     => $k->outlets,
+                'outlets'       => $k->outlets,
             ]);
 
         return response()->json([
@@ -77,12 +77,12 @@ class KasirController extends Controller
             'no_telepon' => 'nullable|string|max:20',
             'outlet_id'  => 'required|integer|exists:outlets,id',
         ], [
-            'name.required'     => 'Nama kasir wajib diisi.',
-            'email.required'    => 'Email wajib diisi.',
-            'email.unique'      => 'Email sudah terdaftar.',
-            'password.required' => 'Password wajib diisi.',
+            'name.required'      => 'Nama kasir wajib diisi.',
+            'email.required'     => 'Email wajib diisi.',
+            'email.unique'       => 'Email sudah terdaftar.',
+            'password.required'  => 'Password wajib diisi.',
             'outlet_id.required' => 'Outlet wajib dipilih.',
-            'outlet_id.exists'  => 'Outlet tidak ditemukan.',
+            'outlet_id.exists'   => 'Outlet tidak ditemukan.',
         ]);
 
         if ($validator->fails()) {
@@ -93,7 +93,6 @@ class KasirController extends Controller
             ], 422);
         }
 
-        // Pastikan outlet_id milik admin ini
         $outletIds = $request->user()->outlets()->pluck('outlets.id');
         if (!$outletIds->contains($request->outlet_id)) {
             return response()->json([
@@ -110,10 +109,7 @@ class KasirController extends Controller
             'is_active'  => true,
         ]);
 
-        // Assign role kasir
         $kasir->assignRole('kasir');
-
-        // Assign ke outlet
         $kasir->outlets()->attach($request->outlet_id);
 
         return response()->json([
@@ -169,16 +165,18 @@ class KasirController extends Controller
             ], 422);
         }
 
-        // Update data dasar
-        $kasir->update(array_filter([
-            'name'       => $request->name,
-            'no_telepon' => $request->no_telepon,
-            'is_active'  => $request->is_active,
-            'password'   => $request->password ? Hash::make($request->password) : null,
-        ], fn($v) => !is_null($v)));
+        // FIX: Gunakan array_filter dengan fn yang juga loloskan boolean false dan integer 0
+        $updateData = [];
+        if ($request->has('name'))       $updateData['name']       = $request->name;
+        if ($request->has('no_telepon')) $updateData['no_telepon'] = $request->no_telepon;
+        if ($request->has('is_active'))  $updateData['is_active']  = $request->boolean('is_active');
+        if ($request->password)          $updateData['password']   = Hash::make($request->password);
 
-        // Pindah outlet kalau diminta
-        if ($request->outlet_id) {
+        if (!empty($updateData)) {
+            $kasir->update($updateData);
+        }
+
+        if ($request->has('outlet_id') && $request->outlet_id) {
             if (!$outletIds->contains($request->outlet_id)) {
                 return response()->json([
                     'success' => false,

@@ -51,7 +51,7 @@ class User extends Authenticatable implements JWTSubject
     // Relations
     public function outlets()
     {
-        return $this->belongsToMany(Outlet::class, 'admin_outlet');
+        return $this->belongsToMany(Outlet::class, 'admin_outlet', 'user_id', 'outlet_id');
     }
 
     public function transactions()

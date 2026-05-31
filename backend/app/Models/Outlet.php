@@ -16,7 +16,7 @@ class Outlet extends Model
 
     public function users()
     {
-        return $this->belongsToMany(User::class, 'admin_outlet');
+        return $this->belongsToMany(User::class, 'admin_outlet', 'outlet_id', 'user_id');
     }
 
     public function products()

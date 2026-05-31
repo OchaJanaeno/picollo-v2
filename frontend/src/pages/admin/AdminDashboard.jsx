@@ -6,7 +6,6 @@ import {
 } from 'recharts'
 import api from '../../api/axios'
 
-// Format Rupiah
 const formatRupiah = (num) => {
   if (!num && num !== 0) return '-'
   if (num >= 1000000) return `Rp ${(num / 1000000).toFixed(1)}jt`
@@ -14,7 +13,6 @@ const formatRupiah = (num) => {
   return `Rp ${num.toLocaleString('id-ID')}`
 }
 
-// Status Badge
 function StatusBadge({ status }) {
   const map = {
     verified: { label: 'Verified',  cls: 'bg-green-100 text-green-700' },
@@ -34,60 +32,63 @@ function StatusBadge({ status }) {
   )
 }
 
-// Custom Tooltip Chart
 const CustomTooltip = ({ active, payload, label }) => {
   if (active && payload?.length) {
     return (
       <div className="bg-zinc-900 border border-zinc-700 rounded-xl px-4 py-2.5 shadow-xl">
         <p className="text-zinc-400 text-xs mb-1">{label}</p>
-        <p className="text-white font-bold text-sm">{formatRupiah(payload[0].value * 1000)}</p>
+        <p className="text-white font-bold text-sm">{formatRupiah(payload[0].value)}</p>
       </div>
     )
   }
   return null
 }
 
-// Skeleton Loader
 const Skeleton = ({ className }) => (
   <div className={`animate-pulse bg-white/20 rounded-lg ${className}`} />
 )
 
-// Stat Card
 const STAT_ICONS = {
-  omzet: "M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z",
+  omzet:     "M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z",
   transaksi: "M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2",
-  outlet: "M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4",
-  anomali: "M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z",
+  outlet:    "M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4",
+  anomali:   "M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z",
 }
 
 export default function AdminDashboard() {
-  const [period, setPeriod]   = useState('6bln')
-  const [loading, setLoading] = useState(true)
-  const [stats, setStats]     = useState(null)
+  const [period, setPeriod]         = useState('6bln')
+  const [loading, setLoading]       = useState(true)
+  const [stats, setStats]           = useState(null)
   const [transactions, setTransactions] = useState([])
-  const [outlets, setOutlets] = useState([])
-  const [chartData, setChartData] = useState([])
+  const [outlets, setOutlets]       = useState([])
+  const [chartData, setChartData]   = useState([])
 
-  useEffect(() => {
-    fetchDashboard()
-  }, [period])
+  useEffect(() => { fetchDashboard() }, [period])
 
   const fetchDashboard = async () => {
     setLoading(true)
     try {
+      // FIX: route yang benar sesuai routes/api.php
       const [statsRes, txRes, outletRes] = await Promise.all([
-        api.get('/admin/dashboard'),
-        api.get('/admin/transactions?per_page=5'),
-        api.get('/admin/outlets'),
+        api.get('/dashboard/admin'),
+        api.get('/transactions?per_page=5'),
+        api.get('/outlets'),
       ])
 
-      setStats(statsRes.data.data?.stat_cards || statsRes.data.data || null)
+      const statData = statsRes.data.data?.stat_cards || statsRes.data.data || null
+      setStats(statData)
+
       setTransactions(txRes.data.data?.data || txRes.data.data || [])
       setOutlets(outletRes.data.data?.data || outletRes.data.data || [])
 
-      // Build chart data dari transaksi
-      const chartRaw = statsRes.data.data?.chart || []
-      setChartData(chartRaw)
+      // Chart dari grafik_pendapatan di response dashboard
+      const grafik = statsRes.data.data?.grafik_pendapatan || []
+      const mapped = grafik.map(g => ({
+        label: g.tanggal,
+        total: parseFloat(g.total) || 0,
+        jumlah: g.jumlah_transaksi || 0,
+      }))
+      setChartData(mapped)
     } catch (err) {
       console.error('Dashboard error:', err)
     } finally {
@@ -97,40 +98,40 @@ export default function AdminDashboard() {
 
   const statCards = [
     {
-      key: 'omzet',
-      label: 'Total Omzet Hari Ini',
-      value: loading ? null : formatRupiah(stats?.total_omzet_hari_ini || 0),
-      change: stats?.omzet_change || '-',
-      up: (stats?.omzet_change || '').startsWith('+'),
-      color: 'bg-red-800',
-      icon: STAT_ICONS.omzet,
+      key:    'omzet',
+      label:  'Pendapatan Hari Ini',
+      value:  loading ? null : formatRupiah(stats?.pendapatan_hari_ini || 0),
+      change: stats?.total_pendapatan ? `Total: ${formatRupiah(stats.total_pendapatan)}` : '-',
+      up:     null,
+      color:  'bg-red-800',
+      icon:   STAT_ICONS.omzet,
     },
     {
-      key: 'transaksi',
-      label: 'Total Transaksi',
-      value: loading ? null : (stats?.total_transaksi ?? '-'),
-      change: stats?.transaksi_change || '-',
-      up: (stats?.transaksi_change || '').startsWith('+'),
-      color: 'bg-zinc-800',
-      icon: STAT_ICONS.transaksi,
+      key:    'transaksi',
+      label:  'Transaksi Hari Ini',
+      value:  loading ? null : (stats?.transaksi_hari_ini ?? '-'),
+      change: '-',
+      up:     null,
+      color:  'bg-zinc-800',
+      icon:   STAT_ICONS.transaksi,
     },
     {
-      key: 'outlet',
-      label: 'Outlet Aktif',
-      value: loading ? null : `${stats?.outlet_aktif ?? '-'} / ${stats?.total_outlet ?? '-'}`,
-      change: stats?.outlet_nonaktif ? `${stats.outlet_nonaktif} nonaktif` : '-',
-      up: null,
-      color: 'bg-zinc-700',
-      icon: STAT_ICONS.outlet,
+      key:    'outlet',
+      label:  'Outlet Aktif',
+      value:  loading ? null : (stats?.total_outlet_aktif ?? '-'),
+      change: stats?.total_produk_aktif ? `${stats.total_produk_aktif} produk aktif` : '-',
+      up:     null,
+      color:  'bg-zinc-700',
+      icon:   STAT_ICONS.outlet,
     },
     {
-      key: 'anomali',
-      label: 'Anomali Terdeteksi',
-      value: loading ? null : (stats?.anomali_terdeteksi ?? '-'),
-      change: stats?.anomali_terdeteksi > 0 ? 'Perlu diperiksa' : 'Aman',
-      up: !(stats?.anomali_terdeteksi > 0),
-      color: 'bg-red-900',
-      icon: STAT_ICONS.anomali,
+      key:    'keuntungan',
+      label:  'Est. Keuntungan Stok',
+      value:  loading ? null : formatRupiah(stats?.estimasi_keuntungan || 0),
+      change: '-',
+      up:     null,
+      color:  'bg-red-900',
+      icon:   STAT_ICONS.anomali,
     },
   ]
 
@@ -175,11 +176,7 @@ export default function AdminDashboard() {
                 ? <Skeleton className="h-8 w-24 mb-2" />
                 : <p className="text-xl sm:text-2xl font-bold mb-1">{card.value}</p>
               }
-              <p className={`text-xs font-medium
-                ${card.up === true  ? 'text-green-300' :
-                  card.up === false ? 'text-red-300'   : 'text-white/50'}`}>
-                {card.up === true && '↑ '}{card.up === false && '↓ '}{card.change}
-              </p>
+              <p className="text-xs font-medium text-white/50">{card.change}</p>
             </div>
           ))}
         </div>
@@ -190,14 +187,16 @@ export default function AdminDashboard() {
             <div className="flex items-center justify-between mb-5">
               <div>
                 <h3 className="font-bold text-zinc-900 text-sm sm:text-base">Tren Omzet</h3>
-                <p className="text-zinc-400 text-xs mt-0.5">{period === '7hr' ? '7 hari' : period === '30hr' ? '30 hari' : '6 bulan'} terakhir</p>
+                <p className="text-zinc-400 text-xs mt-0.5">
+                  {period === '7hr' ? '7 hari' : period === '30hr' ? '30 hari' : '6 bulan'} terakhir
+                </p>
               </div>
             </div>
             <ResponsiveContainer width="100%" height={200}>
-              <AreaChart data={chartData.length ? chartData : []} margin={{ top: 5, right: 5, bottom: 0, left: -20 }}>
+              <AreaChart data={chartData} margin={{ top: 5, right: 5, bottom: 0, left: -20 }}>
                 <defs>
                   <linearGradient id="omzetGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#991b1b" stopOpacity={0.3} />
+                    <stop offset="5%"  stopColor="#991b1b" stopOpacity={0.3} />
                     <stop offset="95%" stopColor="#991b1b" stopOpacity={0} />
                   </linearGradient>
                 </defs>
@@ -205,7 +204,7 @@ export default function AdminDashboard() {
                 <XAxis dataKey="label" tick={{ fontSize: 11, fill: '#a1a1aa' }} axisLine={false} tickLine={false} />
                 <YAxis tick={{ fontSize: 11, fill: '#a1a1aa' }} axisLine={false} tickLine={false} />
                 <Tooltip content={<CustomTooltip />} />
-                <Area type="monotone" dataKey="omzet" stroke="#991b1b" strokeWidth={2.5}
+                <Area type="monotone" dataKey="total" stroke="#991b1b" strokeWidth={2.5}
                   fill="url(#omzetGrad)" dot={{ fill: '#991b1b', r: 4 }} activeDot={{ r: 6 }} />
               </AreaChart>
             </ResponsiveContainer>
@@ -221,7 +220,10 @@ export default function AdminDashboard() {
             </div>
             <ResponsiveContainer width="100%" height={200}>
               <BarChart
-                data={outlets.map(o => ({ nama: o.nama?.split(' ')[0] || '-', omzet: (o.total_omzet || 0) / 1000000 }))}
+                data={outlets.map(o => ({
+                  nama:  o.nama?.split(' ')[0] || '-',
+                  omzet: parseFloat(o.total_omzet || 0),
+                }))}
                 margin={{ top: 5, right: 5, bottom: 0, left: -20 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f4f4f5" vertical={false} />
                 <XAxis dataKey="nama" tick={{ fontSize: 10, fill: '#a1a1aa' }} axisLine={false} tickLine={false} />
@@ -266,7 +268,7 @@ export default function AdminDashboard() {
                     <div className="flex items-center gap-3 min-w-0">
                       <div className="w-8 h-8 bg-zinc-100 rounded-lg flex items-center justify-center shrink-0">
                         <span className="text-zinc-500 text-xs font-mono font-bold">
-                          {tx.metode_pembayaran === 'qris' ? 'QR' : 'TN'}
+                          {tx.metode_pembayaran === 'qris' ? 'QR' : tx.metode_pembayaran === 'transfer' ? 'TF' : 'TN'}
                         </span>
                       </div>
                       <div className="min-w-0">

@@ -1,6 +1,13 @@
 import { useState, useEffect } from 'react'
 import Layout from '../../components/Layout'
-import { outletService } from '../../services/outletService'
+import api from '../../api/axios'
+
+const formatRupiah = (num) => {
+  if (!num && num !== 0) return 'Rp 0'
+  if (num >= 1000000) return `Rp ${(num / 1000000).toFixed(1)}jt`
+  if (num >= 1000)    return `Rp ${(num / 1000).toFixed(0)}rb`
+  return `Rp ${num.toLocaleString('id-ID')}`
+}
 
 function StatusBadge({ status }) {
   const map = {
@@ -32,28 +39,34 @@ function EmptyState() {
 }
 
 function ModalTambah({ onClose, onSave }) {
-  const [form, setForm] = useState({ nama: '', alamat: '' })
+  const [form, setForm]     = useState({ nama: '', alamat: '', kota: '' })
   const [errors, setErrors] = useState({})
   const [loading, setLoading] = useState(false)
 
-  const set = (f, v) => {
+  const setField = (f, v) => {
     setForm(p => ({ ...p, [f]: v }))
     setErrors(p => ({ ...p, [f]: null }))
   }
 
   const handleSave = async () => {
     const e = {}
-    if (!form.nama)   e.nama   = 'Nama outlet tidak boleh kosong'
-    if (!form.alamat) e.alamat = 'Alamat tidak boleh kosong'
+    if (!form.nama) e.nama = 'Nama outlet tidak boleh kosong'
     if (Object.keys(e).length) { setErrors(e); return }
+
     setLoading(true)
     try {
-      // TODO: const res = await outletService.create(form)
-      // onSave(res.data.data)
-      onSave({ ...form, id: Date.now(), status: 'aktif', kasir: '-', tx: 0, omzet: 'Rp 0' })
+      // FIX: Sekarang hit API yang sesungguhnya
+      const res = await api.post('/outlets', {
+        nama:   form.nama,
+        alamat: form.alamat || null,
+        kota:   form.kota   || null,
+      })
+      onSave(res.data.data)
     } catch (err) {
       setErrors({ global: err.response?.data?.message || 'Gagal membuat outlet' })
-    } finally { setLoading(false) }
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -70,6 +83,7 @@ function ModalTambah({ onClose, onSave }) {
             </svg>
           </button>
         </div>
+
         <div className="px-6 py-5 space-y-4">
           {errors.global && (
             <div className="bg-red-50 border border-red-200 text-red-600 rounded-xl px-4 py-3 text-sm">
@@ -77,8 +91,8 @@ function ModalTambah({ onClose, onSave }) {
             </div>
           )}
           <div>
-            <label className="text-zinc-700 text-sm font-semibold mb-1.5 block">Nama Outlet</label>
-            <input type="text" value={form.nama} onChange={e => set('nama', e.target.value)}
+            <label className="text-zinc-700 text-sm font-semibold mb-1.5 block">Nama Outlet *</label>
+            <input type="text" value={form.nama} onChange={e => setField('nama', e.target.value)}
               placeholder="Contoh: Outlet Surabaya"
               className={`w-full border rounded-xl px-4 py-2.5 text-sm focus:outline-none transition-colors
                 ${errors.nama ? 'border-red-400 bg-red-50' : 'border-zinc-300 focus:border-red-800'}`} />
@@ -86,13 +100,20 @@ function ModalTambah({ onClose, onSave }) {
           </div>
           <div>
             <label className="text-zinc-700 text-sm font-semibold mb-1.5 block">Alamat</label>
-            <textarea value={form.alamat} onChange={e => set('alamat', e.target.value)}
-              placeholder="Jl. Contoh No. 1, Kota" rows={3}
-              className={`w-full border rounded-xl px-4 py-2.5 text-sm focus:outline-none transition-colors resize-none
-                ${errors.alamat ? 'border-red-400 bg-red-50' : 'border-zinc-300 focus:border-red-800'}`} />
-            {errors.alamat && <p className="text-xs text-red-500 mt-1">{errors.alamat}</p>}
+            <textarea value={form.alamat} onChange={e => setField('alamat', e.target.value)}
+              placeholder="Jl. Contoh No. 1" rows={3}
+              className="w-full border border-zinc-300 rounded-xl px-4 py-2.5 text-sm
+                         focus:outline-none focus:border-red-800 transition-colors resize-none" />
+          </div>
+          <div>
+            <label className="text-zinc-700 text-sm font-semibold mb-1.5 block">Kota</label>
+            <input type="text" value={form.kota} onChange={e => setField('kota', e.target.value)}
+              placeholder="Contoh: Surabaya"
+              className="w-full border border-zinc-300 rounded-xl px-4 py-2.5 text-sm
+                         focus:outline-none focus:border-red-800 transition-colors" />
           </div>
         </div>
+
         <div className="px-6 py-4 border-t border-zinc-100 flex gap-2">
           <button onClick={onClose}
             className="flex-1 border border-zinc-300 text-zinc-700 font-semibold py-2.5
@@ -116,10 +137,15 @@ function ModalDetail({ outlet, onClose, onToggleStatus }) {
   const handleToggle = async () => {
     setLoading(true)
     try {
-      // TODO: await outletService.toggleStatus(outlet.id)
-      onToggleStatus(outlet.id)
-    } catch {}
-    finally { setLoading(false) }
+      // FIX: Hit API yang sesungguhnya untuk toggle status
+      const newStatus = outlet.status === 'nonaktif' ? 'aktif' : 'nonaktif'
+      await api.put(`/outlets/${outlet.id}`, { status: newStatus })
+      onToggleStatus(outlet.id, newStatus)
+    } catch (err) {
+      console.error('Gagal toggle status:', err)
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -136,12 +162,12 @@ function ModalDetail({ outlet, onClose, onToggleStatus }) {
         <div className="px-6 py-5">
           <div className="bg-zinc-50 rounded-xl p-4 space-y-2.5">
             {[
-              { label: 'ID Outlet',  val: outlet.id },
-              { label: 'Nama',       val: outlet.nama },
-              { label: 'Alamat',     val: outlet.alamat },
-              { label: 'Kasir',      val: outlet.kasir },
-              { label: 'Transaksi',  val: `${outlet.tx} transaksi` },
-              { label: 'Omzet',      val: outlet.omzet },
+              { label: 'Kode Outlet', val: outlet.kode_outlet || '-' },
+              { label: 'Nama',        val: outlet.nama },
+              { label: 'Alamat',      val: outlet.alamat || '-' },
+              { label: 'Kota',        val: outlet.kota   || '-' },
+              { label: 'Transaksi',   val: `${outlet.total_transaksi || 0} transaksi` },
+              { label: 'Omzet',       val: formatRupiah(outlet.total_omzet || 0) },
             ].map(r => (
               <div key={r.label} className="flex justify-between text-sm">
                 <span className="text-zinc-500">{r.label}</span>
@@ -186,33 +212,34 @@ export default function AdminOutlet() {
   const fetchOutlets = async () => {
     setLoading(true)
     try {
-      // TODO: const res = await outletService.getAll()
-      // setOutlets(res.data.data || [])
+      // FIX: Hit API yang sesungguhnya
+      const res = await api.get('/outlets')
+      setOutlets(res.data.data?.data || res.data.data || [])
+    } catch (err) {
+      console.error('Gagal fetch outlets:', err)
       setOutlets([])
-    } catch { setOutlets([]) }
-    finally { setLoading(false) }
+    } finally {
+      setLoading(false)
+    }
   }
 
   const handleSave = (outlet) => {
-    setOutlets(prev => [...prev, outlet])
+    setOutlets(prev => [outlet, ...prev])
     setShowTambah(false)
   }
 
-  const handleToggleStatus = (id) => {
+  // FIX: handleToggleStatus sekarang terima newStatus dari ModalDetail
+  const handleToggleStatus = (id, newStatus) => {
     setOutlets(prev => prev.map(o =>
-      o.id === id
-        ? { ...o, status: o.status === 'nonaktif' ? 'aktif' : 'nonaktif' }
-        : o
+      o.id === id ? { ...o, status: newStatus } : o
     ))
-    setDetail(prev => prev
-      ? { ...prev, status: prev.status === 'nonaktif' ? 'aktif' : 'nonaktif' }
-      : null
-    )
+    setDetail(prev => prev ? { ...prev, status: newStatus } : null)
   }
 
   const filtered = outlets.filter(o => {
     const matchSearch = o.nama?.toLowerCase().includes(search.toLowerCase()) ||
-                        o.alamat?.toLowerCase().includes(search.toLowerCase())
+                        o.alamat?.toLowerCase().includes(search.toLowerCase()) ||
+                        o.kota?.toLowerCase().includes(search.toLowerCase())
     const matchStatus = filterStatus === 'semua' || o.status === filterStatus
     return matchSearch && matchStatus
   })
@@ -255,7 +282,7 @@ export default function AdminOutlet() {
             Tambah Outlet
           </button>
         </div>
-        
+
         {/* Stats */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {[
@@ -320,19 +347,21 @@ export default function AdminOutlet() {
                       </div>
                       <div>
                         <p className="text-zinc-900 font-bold text-sm">{outlet.nama}</p>
-                        <p className="text-zinc-400 text-xs">{outlet.id}</p>
+                        <p className="text-zinc-400 text-xs">{outlet.kode_outlet}</p>
                       </div>
                     </div>
                     <StatusBadge status={outlet.status} />
                   </div>
 
-                  <p className="text-zinc-500 text-xs mb-4 line-clamp-2">{outlet.alamat}</p>
+                  <p className="text-zinc-500 text-xs mb-4 line-clamp-2">
+                    {outlet.alamat || outlet.kota || 'Alamat belum diisi'}
+                  </p>
 
                   <div className="grid grid-cols-3 gap-2">
                     {[
-                      { label: 'Kasir',     val: outlet.kasir },
-                      { label: 'Transaksi', val: outlet.tx },
-                      { label: 'Omzet',     val: outlet.omzet },
+                      { label: 'Kasir',     val: outlet.total_kasir     || 0 },
+                      { label: 'Transaksi', val: outlet.total_transaksi || 0 },
+                      { label: 'Omzet',     val: formatRupiah(outlet.total_omzet || 0) },
                     ].map(s => (
                       <div key={s.label} className="bg-zinc-50 rounded-xl px-3 py-2.5 text-center">
                         <p className="text-zinc-900 font-bold text-xs">{s.val}</p>

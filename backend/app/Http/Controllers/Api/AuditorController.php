@@ -11,7 +11,7 @@ use Illuminate\Validation\Rules\Password as PasswordRule;
 
 class AuditorController extends Controller
 {
-    //GET semua auditor
+    // GET semua auditor
     public function index(Request $request)
     {
         $outletIds = $request->user()->outlets()->pluck('outlets.id');
@@ -36,7 +36,7 @@ class AuditorController extends Controller
         ]);
     }
 
-    //GET detail auditor
+    // GET detail auditor
     public function show(Request $request, $id)
     {
         $outletIds = $request->user()->outlets()->pluck('outlets.id');
@@ -59,7 +59,7 @@ class AuditorController extends Controller
         ]);
     }
 
-    //POST buat akun auditor
+    // POST buat akun auditor
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -93,7 +93,6 @@ class AuditorController extends Controller
             ], 422);
         }
 
-        // Pastikan outlet milik admin ini
         $outletIds = $request->user()->outlets()->pluck('outlets.id');
         if (!$outletIds->contains($request->outlet_id)) {
             return response()->json([
@@ -110,10 +109,7 @@ class AuditorController extends Controller
             'is_active'  => true,
         ]);
 
-        // Assign role auditor
         $auditor->assignRole('auditor');
-
-        // Assign ke outlet
         $auditor->outlets()->attach($request->outlet_id);
 
         return response()->json([
@@ -129,7 +125,7 @@ class AuditorController extends Controller
         ], 201);
     }
 
-    //PUT update auditor
+    // PUT update auditor
     public function update(Request $request, $id)
     {
         $outletIds = $request->user()->outlets()->pluck('outlets.id');
@@ -169,14 +165,18 @@ class AuditorController extends Controller
             ], 422);
         }
 
-        $auditor->update(array_filter([
-            'name'       => $request->name,
-            'no_telepon' => $request->no_telepon,
-            'is_active'  => $request->is_active,
-            'password'   => $request->password ? Hash::make($request->password) : null,
-        ], fn($v) => !is_null($v)));
+        // FIX: Tangani is_active = false dengan benar (tidak pakai array_filter)
+        $updateData = [];
+        if ($request->has('name'))       $updateData['name']       = $request->name;
+        if ($request->has('no_telepon')) $updateData['no_telepon'] = $request->no_telepon;
+        if ($request->has('is_active'))  $updateData['is_active']  = $request->boolean('is_active');
+        if ($request->password)          $updateData['password']   = Hash::make($request->password);
 
-        if ($request->outlet_id) {
+        if (!empty($updateData)) {
+            $auditor->update($updateData);
+        }
+
+        if ($request->has('outlet_id') && $request->outlet_id) {
             if (!$outletIds->contains($request->outlet_id)) {
                 return response()->json([
                     'success' => false,
@@ -193,7 +193,7 @@ class AuditorController extends Controller
         ]);
     }
 
-    //DELETE auditor
+    // DELETE auditor
     public function destroy(Request $request, $id)
     {
         $outletIds = $request->user()->outlets()->pluck('outlets.id');
