@@ -2,6 +2,8 @@ import { useState, useEffect, useRef } from 'react'
 import Layout from '../../components/Layout'
 import LoadingSpinner from '../../components/LoadingSpinner'
 import ErrorState from '../../components/ErrorState'
+import { kasirService } from '../../services/kasirService'
+import { outletService } from '../../services/outletService'
 
 function ModalBuatKasir({ outlets, onClose, onSave }) {
   const [form, setForm] = useState({
@@ -54,30 +56,38 @@ function ModalBuatKasir({ outlets, onClose, onSave }) {
     if (Object.keys(e).length) { setErrors(e); return }
     setLoading(true)
     try {
-      // TODO: backend siap → uncomment:
-      // const formData = new FormData()
-      // formData.append('name', form.nama)
-      // formData.append('email', form.email)
-      // formData.append('password', form.password)
-      // formData.append('password_plain', form.password)
-      // formData.append('outlet_id', form.outlet_id)
-      // formData.append('role', 'kasir')
-      // if (foto instanceof File) formData.append('foto', foto)
-      // const res = await kasirService.create(formData)
-      // onSave(res.data.data)
-
-      onSave({
-        ...form,
-        id: Date.now(),
+      const payload = {
+        name: form.nama,
+        email: form.email,
+        password: form.password,
+        password_confirmation: form.password,
+        outlet_id: parseInt(form.outlet_id),
+      }
+      const res = await kasirService.create(payload)
+      const newKasirObj = {
+        id: res.data.data.id,
+        nama: res.data.data.name,
+        email: res.data.data.email,
+        outlet: outlets.find(o => o.id == res.data.data.outlet_id)?.nama || '-',
+        bergabung: new Date().toLocaleDateString('id-ID'),
         status: 'aktif',
         total_transaksi: 0,
-        foto: fotoPreview,
-        outlet: outlets.find(o => o.id == form.outlet_id)?.nama || '-',
-        bergabung: new Date().toLocaleDateString('id-ID'),
+        foto: null,
         password_plain: form.password,
-      })
+      }
+      onSave(newKasirObj)
     } catch (err) {
-      setErrors({ global: err.response?.data?.message || 'Gagal membuat akun kasir' })
+      if (err.response?.data?.errors) {
+        const apiErrors = err.response.data.errors
+        const formErrors = {}
+        if (apiErrors.name) formErrors.nama = apiErrors.name[0]
+        if (apiErrors.email) formErrors.email = apiErrors.email[0]
+        if (apiErrors.password) formErrors.password = apiErrors.password[0]
+        if (apiErrors.outlet_id) formErrors.outlet_id = apiErrors.outlet_id[0]
+        setErrors(formErrors)
+      } else {
+        setErrors({ global: err.response?.data?.message || 'Gagal membuat akun kasir' })
+      }
     } finally { setLoading(false) }
   }
 
@@ -402,24 +412,42 @@ export default function AdminManajemenKasir() {
   const fetchData = async () => {
     setLoading(true)
     try {
-      // TODO: ambil data outlet dari backend
-// const outletRes = await outletService.getAll()
-// setOutlets(outletRes.data.data || [])
+      const outletRes = await outletService.getAll()
+      setOutlets(outletRes.data.data || [])
 
-// TODO: ambil data kasir dari backend
-// const kasirRes = await kasirService.getAll()
-// setData(kasirRes.data.data || [])
-
-setOutlets([])
-setData([])
-    } catch { setData([]); setOutlets([]) }
-    finally { setLoading(false) }
+      const kasirRes = await kasirService.getAll()
+      const mappedKasir = (kasirRes.data.data || []).map(k => ({
+        id: k.id,
+        nama: k.name,
+        email: k.email,
+        outlet: k.outlets?.[0]?.nama || '-',
+        bergabung: k.created_at ? new Date(k.created_at).toLocaleDateString('id-ID') : '-',
+        total_transaksi: k.total_transaksi || 0,
+        status: k.is_active ? 'aktif' : 'nonaktif',
+        password_plain: '',
+      }))
+      setData(mappedKasir)
+    } catch {
+      setData([])
+      setOutlets([])
+    } finally {
+      setLoading(false)
+    }
   }
 
-  const handleToggle = (id) => {
-    setData(prev => prev.map(k =>
-      k.id === id ? { ...k, status: k.status === 'aktif' ? 'nonaktif' : 'aktif' } : k
-    ))
+  const handleToggle = async (id) => {
+    const kasir = data.find(k => k.id === id)
+    if (!kasir) return
+    const newStatus = kasir.status === 'aktif' ? 'nonaktif' : 'aktif'
+    const newIsActive = newStatus === 'aktif'
+    try {
+      await kasirService.update(id, { is_active: newIsActive })
+      setData(prev => prev.map(k =>
+        k.id === id ? { ...k, status: newStatus } : k
+      ))
+    } catch (err) {
+      alert('Gagal mengubah status kasir')
+    }
   }
 
   const handleSaveKasir = (kasir) => {

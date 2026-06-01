@@ -28,6 +28,8 @@ class AuditorController extends Controller
                 'is_active'     => $a->is_active,
                 'last_login_at' => $a->last_login_at,
                 'outlets'       => $a->outlets,
+                'instansi'      => $a->instansi,
+                'created_at'    => $a->created_at,
             ]);
 
         return response()->json([
@@ -76,6 +78,7 @@ class AuditorController extends Controller
             ],
             'no_telepon' => 'nullable|string|max:20',
             'outlet_id'  => 'required|integer|exists:outlets,id',
+            'instansi'   => 'required|string|max:255',
         ], [
             'name.required'      => 'Nama auditor wajib diisi.',
             'email.required'     => 'Email wajib diisi.',
@@ -83,6 +86,7 @@ class AuditorController extends Controller
             'password.required'  => 'Password wajib diisi.',
             'outlet_id.required' => 'Outlet wajib dipilih.',
             'outlet_id.exists'   => 'Outlet tidak ditemukan.',
+            'instansi.required'  => 'Instansi wajib diisi.',
         ]);
 
         if ($validator->fails()) {
@@ -107,6 +111,7 @@ class AuditorController extends Controller
             'password'   => Hash::make($request->password),
             'no_telepon' => $request->no_telepon,
             'is_active'  => true,
+            'instansi'   => $request->instansi,
         ]);
 
         $auditor->assignRole('auditor');
@@ -121,6 +126,7 @@ class AuditorController extends Controller
                 'email'      => $auditor->email,
                 'no_telepon' => $auditor->no_telepon,
                 'outlet_id'  => $request->outlet_id,
+                'instansi'   => $auditor->instansi,
             ],
         ], 201);
     }
@@ -146,6 +152,7 @@ class AuditorController extends Controller
             'no_telepon' => 'nullable|string|max:20',
             'is_active'  => 'sometimes|boolean',
             'outlet_id'  => 'sometimes|integer|exists:outlets,id',
+            'instansi'   => 'sometimes|required|string|max:255',
             'password'   => [
                 'sometimes',
                 'confirmed',
@@ -170,6 +177,7 @@ class AuditorController extends Controller
         if ($request->has('name'))       $updateData['name']       = $request->name;
         if ($request->has('no_telepon')) $updateData['no_telepon'] = $request->no_telepon;
         if ($request->has('is_active'))  $updateData['is_active']  = $request->boolean('is_active');
+        if ($request->has('instansi'))   $updateData['instansi']   = $request->instansi;
         if ($request->password)          $updateData['password']   = Hash::make($request->password);
 
         if (!empty($updateData)) {
