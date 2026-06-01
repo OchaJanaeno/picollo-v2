@@ -151,4 +151,26 @@ class OutletController extends Controller
             'message' => 'Outlet berhasil dihapus.',
         ]);
     }
+
+    // PATCH toggle status outlet
+    public function toggleStatus(Request $request, $id)
+    {
+        $outlet = $request->user()->outlets()->find($id);
+
+        if (!$outlet) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Outlet tidak ditemukan.',
+            ], 404);
+        }
+
+        $outlet->status = $outlet->status === 'nonaktif' ? 'aktif' : 'nonaktif';
+        $outlet->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Status outlet berhasil diubah.',
+            'data'    => $outlet,
+        ]);
+    }
 }

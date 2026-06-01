@@ -26,4 +26,9 @@ class AuditLog extends Model
     {
         return $this->belongsTo(User::class);
     }
+
+    public function correctionLogs()
+    {
+        return $this->hasMany(CorrectionLog::class);
+    }
 }

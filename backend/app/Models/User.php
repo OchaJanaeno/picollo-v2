@@ -4,15 +4,20 @@ namespace App\Models;
 
 use App\Notifications\ResetPasswordNotification;
 use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Notifications\Notifiable;
 use Spatie\Permission\Traits\HasRoles;
 use Tymon\JWTAuth\Contracts\JWTSubject;
 use App\Models\Outlet;
 use App\Models\Transaction;
+use App\Models\AuditLog;
+use App\Models\CorrectionLog;
+use App\Models\DailyRecap;
+use App\Models\HashVerification;
 
 class User extends Authenticatable implements JWTSubject
 {
-    use Notifiable, HasRoles;
+    use HasFactory, Notifiable, HasRoles;
 
     protected $fillable = [
         'name',
@@ -57,6 +62,31 @@ class User extends Authenticatable implements JWTSubject
     public function transactions()
     {
         return $this->hasMany(Transaction::class);
+    }
+
+    public function auditLogs()
+    {
+        return $this->hasMany(AuditLog::class);
+    }
+
+    public function correctionLogs()
+    {
+        return $this->hasMany(CorrectionLog::class, 'corrected_by');
+    }
+
+    public function dailyRecaps()
+    {
+        return $this->hasMany(DailyRecap::class, 'user_id');
+    }
+
+    public function approvedDailyRecaps()
+    {
+        return $this->hasMany(DailyRecap::class, 'approved_by');
+    }
+
+    public function verifiedHashes()
+    {
+        return $this->hasMany(HashVerification::class, 'verified_by');
     }
 
     public function sendPasswordResetNotification($token): void

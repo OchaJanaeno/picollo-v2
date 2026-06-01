@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import Layout from '../../components/Layout'
 import useAuthStore from '../../store/authStore'
+import { transaksiService } from '../../services/transaksiService'
 
 // ── Struk / Receipt ──
 function ModalStruk({ transaksi, onClose, onBaru }) {
@@ -113,7 +114,7 @@ function ModalStruk({ transaksi, onClose, onBaru }) {
 }
 
 // ── Modal Pembayaran ──
-function ModalPembayaran({ keranjang, total, kasirNama, onClose, onSuccess }) {
+function ModalPembayaran({ keranjang, total, kasirNama, outletId, onClose, onSuccess }) {
   // metode hanya QRIS dan Tunai (Transfer dihapus)
   const [metode, setMetode]           = useState('QRIS')
   const [uangDiterima, setUangDiterima] = useState('')
@@ -141,13 +142,21 @@ function ModalPembayaran({ keranjang, total, kasirNama, onClose, onSuccess }) {
 
     setLoading(true)
     try {
-      // TODO: const res = await transaksiService.create({ items: keranjang, metode, total })
-      await new Promise(r => setTimeout(r, 1200))
+      const payload = {
+        outlet_id: outletId,
+        metode_pembayaran: metode.toLowerCase(),
+        items: keranjang.map(item => ({
+          product_id: item.id,
+          qty: item.qty
+        }))
+      }
+      const res = await transaksiService.create(payload)
+      const dataTx = res.data.data
 
       // Buat data struk
       setStruk({
-        id: 'TX-' + Date.now().toString().slice(-6),
-        waktu: new Date().toLocaleString('id-ID', {
+        id: dataTx.transaction_code || 'TX-' + Date.now().toString().slice(-6),
+        waktu: new Date(dataTx.created_at || Date.now()).toLocaleString('id-ID', {
           day: 'numeric', month: 'long', year: 'numeric',
           hour: '2-digit', minute: '2-digit',
         }),
@@ -158,7 +167,10 @@ function ModalPembayaran({ keranjang, total, kasirNama, onClose, onSuccess }) {
         uangDiterima: uangNum,
         kembalian,
       })
-    } catch {}
+    } catch (err) {
+      console.error(err)
+      setErrorUang(err.response?.data?.message || 'Gagal memproses transaksi di server.')
+    }
     finally { setLoading(false) }
   }
 
@@ -386,10 +398,12 @@ export default function KasirTransaksi() {
 
   const fetchProduk = async () => {
     try {
-      // TODO: const res = await transaksiService.getProduk()
-      // setProdukList(res.data.data || [])
+      const res = await transaksiService.getProduk()
+      setProdukList(res.data.data || [])
+    } catch (err) {
+      console.error(err)
       setProdukList([])
-    } catch { setProdukList([]) }
+    }
   }
 
   const showToast = (msg) => {
@@ -441,7 +455,8 @@ export default function KasirTransaksi() {
         <ModalPembayaran
           keranjang={keranjang}
           total={total}
-          kasirNama={user?.nama || user?.email || 'Kasir'}
+          kasirNama={user?.name || user?.nama || user?.email || 'Kasir'}
+          outletId={user?.outlets?.[0]?.id}
           onClose={() => setShowBayar(false)}
           onSuccess={() => { setKeranjang([]); setShowBayar(false) }}
         />
@@ -520,8 +535,8 @@ export default function KasirTransaksi() {
                     className="bg-white border border-zinc-200 rounded-2xl overflow-hidden
                                hover:border-red-200 hover:shadow-md transition-all group">
                     <div className="h-28 bg-zinc-100 flex items-center justify-center overflow-hidden">
-                      {produk.foto
-                        ? <img src={produk.foto} alt={produk.nama}
+                      {(produk.gambar_url || produk.foto)
+                        ? <img src={produk.gambar_url || produk.foto} alt={produk.nama}
                             className="w-full h-full object-cover group-hover:scale-105
                                        transition-transform duration-300"/>
                         : <svg className="w-10 h-10 text-zinc-300" fill="none"

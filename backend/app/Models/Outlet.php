@@ -28,4 +28,14 @@ class Outlet extends Model
     {
         return $this->hasMany(Transaction::class);
     }
+
+    public function dailyRecaps()
+    {
+        return $this->hasMany(DailyRecap::class);
+    }
+
+    public function correctionLogs()
+    {
+        return $this->hasMany(CorrectionLog::class);
+    }
 }

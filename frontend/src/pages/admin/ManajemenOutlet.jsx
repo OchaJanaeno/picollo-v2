@@ -48,9 +48,8 @@ function ModalTambah({ onClose, onSave }) {
     if (Object.keys(e).length) { setErrors(e); return }
     setLoading(true)
     try {
-      // TODO: const res = await outletService.create(form)
-      // onSave(res.data.data)
-      onSave({ ...form, id: Date.now(), status: 'aktif', kasir: '-', tx: 0, omzet: 'Rp 0' })
+      const res = await outletService.create(form)
+      onSave(res.data.data)
     } catch (err) {
       setErrors({ global: err.response?.data?.message || 'Gagal membuat outlet' })
     } finally { setLoading(false) }
@@ -116,7 +115,7 @@ function ModalDetail({ outlet, onClose, onToggleStatus }) {
   const handleToggle = async () => {
     setLoading(true)
     try {
-      // TODO: await outletService.toggleStatus(outlet.id)
+      await outletService.toggleStatus(outlet.id)
       onToggleStatus(outlet.id)
     } catch {}
     finally { setLoading(false) }
@@ -186,9 +185,8 @@ export default function AdminOutlet() {
   const fetchOutlets = async () => {
     setLoading(true)
     try {
-      // TODO: const res = await outletService.getAll()
-      // setOutlets(res.data.data || [])
-      setOutlets([])
+      const res = await outletService.getAll()
+      setOutlets(res.data.data || [])
     } catch { setOutlets([]) }
     finally { setLoading(false) }
   }

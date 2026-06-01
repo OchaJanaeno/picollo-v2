@@ -39,4 +39,9 @@ class CorrectionLog extends Model
     {
         return $this->belongsTo(Outlet::class);
     }
+
+    public function auditLog()
+    {
+        return $this->belongsTo(AuditLog::class);
+    }
 }

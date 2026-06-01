@@ -9,6 +9,13 @@ const api = axios.create({
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('token')
   if (token) config.headers.Authorization = `Bearer ${token}`
+  
+  // Jika data berupa FormData (upload file), hapus Content-Type
+  // agar browser otomatis set multipart/form-data + boundary
+  if (config.data instanceof FormData) {
+    delete config.headers['Content-Type']
+  }
+  
   return config
 })
 

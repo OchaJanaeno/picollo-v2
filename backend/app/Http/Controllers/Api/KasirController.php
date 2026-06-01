@@ -219,4 +219,30 @@ class KasirController extends Controller
             'message' => 'Akun kasir berhasil dihapus.',
         ]);
     }
+
+    // PATCH toggle status kasir
+    public function toggleStatus(Request $request, $id)
+    {
+        $outletIds = $request->user()->outlets()->pluck('outlets.id');
+
+        $kasir = User::role('kasir')
+            ->whereHas('outlets', fn($q) => $q->whereIn('outlets.id', $outletIds))
+            ->find($id);
+
+        if (!$kasir) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Kasir tidak ditemukan.',
+            ], 404);
+        }
+
+        $kasir->is_active = !$kasir->is_active;
+        $kasir->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Status kasir berhasil diubah.',
+            'data'    => $kasir,
+        ]);
+    }
 }

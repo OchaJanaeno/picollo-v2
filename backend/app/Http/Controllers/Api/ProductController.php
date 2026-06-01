@@ -60,7 +60,8 @@ class ProductController extends Controller
             'satuan'     => 'nullable|string|max:255',
             'modal'      => 'nullable|numeric|min:0',
             'stok'       => 'nullable|integer|min:0',
-            'gambar_url' => 'nullable|url',
+            'gambar_url' => 'nullable|string|max:2048',
+            'foto'       => 'nullable|image|mimes:jpeg,png,jpg,gif,svg,webp|max:2048',
         ], [
             'outlet_id.required' => 'Outlet wajib dipilih.',
             'outlet_id.in'       => 'Anda tidak memiliki akses ke outlet tersebut.',
@@ -78,6 +79,17 @@ class ProductController extends Controller
             ], 422);
         }
 
+        $gambarUrl = $request->gambar_url;
+        if ($request->hasFile('foto')) {
+            $file = $request->file('foto');
+            $filename = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
+            if (!file_exists(public_path('uploads/products'))) {
+                mkdir(public_path('uploads/products'), 0755, true);
+            }
+            $file->move(public_path('uploads/products'), $filename);
+            $gambarUrl = asset('uploads/products/' . $filename);
+        }
+
         $product = Product::create([
             'outlet_id'  => $request->outlet_id,
             'nama'       => $request->nama,
@@ -86,7 +98,7 @@ class ProductController extends Controller
             'satuan'     => $request->satuan ?? 'pcs',
             'modal'      => $request->modal,
             'stok'       => $request->stok ?? 0,
-            'gambar_url' => $request->gambar_url,
+            'gambar_url' => $gambarUrl,
             'is_active'  => true,
         ]);
 
@@ -118,8 +130,9 @@ class ProductController extends Controller
             'satuan'     => 'nullable|string|max:255',
             'modal'      => 'nullable|numeric|min:0',
             'stok'       => 'nullable|integer|min:0',
-            'gambar_url' => 'nullable|url',
+            'gambar_url' => 'nullable|string|max:2048',
             'is_active'  => 'sometimes|boolean',
+            'foto'       => 'nullable|image|mimes:jpeg,png,jpg,gif,svg,webp|max:2048',
         ], [
             'nama.required'  => 'Nama produk wajib diisi.',
             'harga.required' => 'Harga wajib diisi.',
@@ -134,9 +147,27 @@ class ProductController extends Controller
             ], 422);
         }
 
-        $product->update($request->only(
-            'nama', 'kategori', 'harga', 'modal', 'satuan', 'stok', 'gambar_url', 'is_active'
-        ));
+        $gambarUrl = $request->gambar_url;
+        if ($request->hasFile('foto')) {
+            $file = $request->file('foto');
+            $filename = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
+            if (!file_exists(public_path('uploads/products'))) {
+                mkdir(public_path('uploads/products'), 0755, true);
+            }
+            $file->move(public_path('uploads/products'), $filename);
+            $gambarUrl = asset('uploads/products/' . $filename);
+        }
+
+        $product->update(array_filter([
+            'nama'       => $request->nama,
+            'kategori'   => $request->kategori,
+            'harga'      => $request->harga,
+            'modal'      => $request->modal,
+            'satuan'     => $request->satuan,
+            'stok'       => $request->stok,
+            'gambar_url' => $gambarUrl,
+            'is_active'  => $request->is_active,
+        ], fn($v) => !is_null($v)));
 
         return response()->json([
             'success' => true,

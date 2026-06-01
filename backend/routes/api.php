@@ -31,21 +31,29 @@ Route::middleware('auth:api')->group(function () {
     });
 
     //Admin only
-    Route::middleware('role:admin')->group(function () {
-        Route::get('/dashboard/admin',                          [DashboardController::class, 'adminDashboard']);
+    Route::middleware('role:admin')->prefix('admin')->group(function () {
+        Route::get('/dashboard',                                [DashboardController::class, 'adminDashboard']);
+        Route::patch('/outlets/{outlet}/toggle-status',         [OutletController::class, 'toggleStatus']);
+        Route::patch('/cashiers/{cashier}/toggle-status',       [KasirController::class, 'toggleStatus']);
         Route::apiResource('/outlets',                         OutletController::class);
-        Route::apiResource('/kasir',                           KasirController::class);
+        Route::apiResource('/cashiers',                        KasirController::class);
         Route::apiResource('/auditors',                        AuditorController::class);
         Route::apiResource('/products',                        ProductController::class);
         Route::patch('/daily-recaps/{id}/approve',              [DailyRecapController::class, 'approve']);
         Route::patch('/correction-logs/{id}/approve',           [CorrectionLogController::class, 'approve']);
         Route::get('/audit-logs',                               [AuditLogController::class, 'index']);
-        Route::get('/reports',                                  [ReportController::class, 'index']);
-        Route::get('/reports/export-pdf',                       [ReportController::class, 'exportPdf']);
-        Route::get('/hash-verifications',                       [HashVerificationController::class, 'index']);
-        Route::get('/hash-verifications/{id}',                  [HashVerificationController::class, 'show']);
-        Route::post('/hash-verifications/verify',               [HashVerificationController::class, 'verify']);
-        Route::post('/hash-verifications/verify-chain',         [HashVerificationController::class, 'verifyChain']);
+        Route::get('/reports/financial',                        [ReportController::class, 'index']);
+        Route::get('/reports/export/pdf',                       [ReportController::class, 'exportPdf']);
+        Route::get('/verifications',                            [HashVerificationController::class, 'index']);
+        Route::get('/verifications/{id}',                       [HashVerificationController::class, 'show']);
+        Route::post('/verifications/verify',                    [HashVerificationController::class, 'verify']);
+        Route::post('/verifications/verify-chain',              [HashVerificationController::class, 'verifyChain']);
+        
+        // Additional admin routes mapped from general group
+        Route::get('/transactions',                             [TransactionController::class, 'index']);
+        Route::get('/transactions/{id}',                        [TransactionController::class, 'show']);
+        Route::get('/correction-logs',                          [CorrectionLogController::class, 'index']);
+        Route::get('/correction-logs/{id}',                     [CorrectionLogController::class, 'show']);
     });
 
     //Admin & Kasir
@@ -56,7 +64,10 @@ Route::middleware('auth:api')->group(function () {
             ->only(['index', 'show', 'store']);
         Route::apiResource('/correction-logs', CorrectionLogController::class)
             ->only(['index', 'store']);
+        Route::get('/kasir/products',          [ProductController::class, 'index']);
+        Route::post('/kasir/transactions',     [TransactionController::class, 'store']);
     });
+
 
     //Auditor only
     Route::middleware('role:auditor')->group(function () {

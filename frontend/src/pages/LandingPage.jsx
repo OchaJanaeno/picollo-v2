@@ -497,7 +497,7 @@ const LandingPage = () => {
                                 <span className="contact-text">ocamania021@gmail.com</span>
                             </div>
                             <div className="contact-item">
-                                <div className="contact-icon"><Phone size={20} color="#111"/></div>
+                                <div className="contact-icon"><Phone size={20} color="#111" /></div>
                                 <span className="contact-text">+62 813-9801-9501</span>
                             </div>
                         </div>

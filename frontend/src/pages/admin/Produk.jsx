@@ -1,15 +1,20 @@
 import { useState, useEffect, useRef } from 'react'
 import Layout from '../../components/Layout'
 import { produkService } from '../../services/produkService'
+import { outletService } from '../../services/outletService'
 
 // ── Modal Produk dengan Upload Foto ──
-function ModalProduk({ data, onClose, onSave }) {
+function ModalProduk({ data, outlets, onClose, onSave }) {
   const [form, setForm] = useState({
     nama: data?.nama || '',
     kategori: data?.kategori || '',
     harga: data?.harga || '',
     deskripsi: data?.deskripsi || '',
     status: data?.status || 'aktif',
+    outlet_id: data?.outlet_id || '',
+    satuan: data?.satuan || 'pcs',
+    stok: data?.stok || 0,
+    modal: data?.modal || '',
   })
   const [foto, setFoto] = useState(data?.foto || null)
   const [fotoPreview, setFotoPreview] = useState(data?.foto || null)
@@ -24,11 +29,11 @@ function ModalProduk({ data, onClose, onSave }) {
     if (!file) return
     // Validasi
     if (!file.type.startsWith('image/')) {
-      setErrors(p => ({ ...p, foto: 'File harus berupa gambar (JPG, PNG, WebP)' }))
+      setErrors(p => ({ ...p, foto: 'File must be an image' }))
       return
     }
     if (file.size > 2 * 1024 * 1024) {
-      setErrors(p => ({ ...p, foto: 'Ukuran foto maksimal 2MB' }))
+      setErrors(p => ({ ...p, foto: 'Max size 2MB' }))
       return
     }
     setErrors(p => ({ ...p, foto: null }))
@@ -50,21 +55,35 @@ function ModalProduk({ data, onClose, onSave }) {
     if (!form.nama) e.nama = 'Nama produk tidak boleh kosong'
     if (!form.harga) e.harga = 'Harga tidak boleh kosong'
     else if (isNaN(form.harga)) e.harga = 'Harga harus berupa angka'
+    if (!data && !form.outlet_id) e.outlet_id = 'Pilih outlet untuk produk ini'
     if (Object.keys(e).length) { setErrors(e); return }
     setLoading(true)
     try {
-      // Uncomment saat backend siap:
-      // const formData = new FormData()
-      // Object.entries(form).forEach(([k, v]) => formData.append(k, v))
-      // if (foto instanceof File) formData.append('foto', foto)
-      // if (data) await produkService.update(data.id, formData)
-      // else await produkService.create(formData)
-      onSave(data
-        ? { ...data, ...form, foto: fotoPreview }
-        : { ...form, foto: fotoPreview }
-      )
-    } catch {
-      setErrors({ global: 'Gagal menyimpan produk' })
+      const formData = new FormData()
+      formData.append('outlet_id', data ? data.outlet_id : Number(form.outlet_id))
+      formData.append('nama', form.nama)
+      formData.append('kategori', form.kategori || '')
+      formData.append('harga', Number(form.harga))
+      formData.append('satuan', form.satuan || 'pcs')
+      formData.append('stok', Number(form.stok) || 0)
+      if (form.modal) formData.append('modal', Number(form.modal))
+      formData.append('is_active', form.status === 'aktif' ? 1 : 0)
+      
+      if (foto instanceof File) {
+        formData.append('foto', foto)
+      } else if (fotoPreview) {
+        formData.append('gambar_url', fotoPreview)
+      }
+
+      if (data) {
+        await produkService.update(data.id, formData)
+      } else {
+        await produkService.create(formData)
+      }
+      onSave()
+    } catch (err) {
+      console.error(err)
+      setErrors({ global: err.response?.data?.message || 'Gagal menyimpan produk' })
     } finally { setLoading(false) }
   }
 
@@ -171,6 +190,21 @@ function ModalProduk({ data, onClose, onSave }) {
             {errors.foto && <p className="text-xs text-red-500 mt-1">{errors.foto}</p>}
           </div>
 
+          {/* ── Pilih Outlet (Baru) ── */}
+          {!data && (
+            <div>
+              <label className="text-zinc-700 text-sm font-semibold mb-1.5 block">Assign ke Outlet</label>
+              <select value={form.outlet_id} onChange={e => set('outlet_id', e.target.value)}
+                className={inputCls('outlet_id') + ' bg-white'}>
+                <option value="">-- Pilih Outlet --</option>
+                {outlets.map(o => (
+                  <option key={o.id} value={o.id}>{o.nama}</option>
+                ))}
+              </select>
+              {errors.outlet_id && <p className="text-xs text-red-500 mt-1">{errors.outlet_id}</p>}
+            </div>
+          )}
+
           {/* ── Nama Produk ── */}
           <div>
             <label className="text-zinc-700 text-sm font-semibold mb-1.5 block">Nama Produk</label>
@@ -187,10 +221,29 @@ function ModalProduk({ data, onClose, onSave }) {
                 placeholder="Minuman / Makanan" className={inputCls('kategori')} />
             </div>
             <div>
-              <label className="text-zinc-700 text-sm font-semibold mb-1.5 block">Harga (Rp)</label>
+              <label className="text-zinc-700 text-sm font-semibold mb-1.5 block">Harga Jual (Rp)</label>
               <input type="number" value={form.harga} onChange={e => set('harga', e.target.value)}
                 placeholder="15000" className={inputCls('harga')} />
               {errors.harga && <p className="text-xs text-red-500 mt-1">{errors.harga}</p>}
+            </div>
+          </div>
+
+          {/* ── Modal, Satuan & Stok ── */}
+          <div className="grid grid-cols-3 gap-3">
+            <div>
+              <label className="text-zinc-700 text-sm font-semibold mb-1.5 block">Harga Modal (Rp)</label>
+              <input type="number" value={form.modal} onChange={e => set('modal', e.target.value)}
+                placeholder="10000" className={inputCls('modal')} />
+            </div>
+            <div>
+              <label className="text-zinc-700 text-sm font-semibold mb-1.5 block">Satuan</label>
+              <input type="text" value={form.satuan} onChange={e => set('satuan', e.target.value)}
+                placeholder="pcs" className={inputCls('satuan')} />
+            </div>
+            <div>
+              <label className="text-zinc-700 text-sm font-semibold mb-1.5 block">Stok Awal</label>
+              <input type="number" value={form.stok} onChange={e => set('stok', e.target.value)}
+                placeholder="100" className={inputCls('stok')} />
             </div>
           </div>
 
@@ -252,6 +305,7 @@ function ModalProduk({ data, onClose, onSave }) {
 
 export default function AdminProduk() {
   const [produk, setProduk] = useState([])
+  const [outlets, setOutlets] = useState([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [filterKategori, setFilterKategori] = useState('semua')
@@ -264,15 +318,36 @@ export default function AdminProduk() {
   const fetchData = async () => {
     setLoading(true)
     try {
-      // const res = await produkService.getAll()
-      // setProduk(res.data.data || [])
-      setProduk([])
-    } catch { setProduk([]) }
+      const outletRes = await outletService.getAll()
+      setOutlets(outletRes.data.data || [])
+    } catch (err) {
+      console.error(err)
+      setOutlets([])
+    }
+
+    try {
+      const res = await produkService.getAll()
+      const dataProduk = (res.data.data || []).map(p => ({
+        ...p,
+        foto: p.gambar_url || null,
+        status: p.is_active ? 'aktif' : 'nonaktif'
+      }))
+      setProduk(dataProduk)
+    } catch (err) { 
+      console.error(err)
+      setProduk([]) 
+    }
     finally { setLoading(false) }
   }
 
-  const handleDelete = (id) => {
-    setProduk(prev => prev.filter(p => p.id !== id))
+  const handleDelete = async (id) => {
+    try {
+      await produkService.delete(id)
+      setProduk(prev => prev.filter(p => p.id !== id))
+    } catch (err) {
+      console.error(err)
+      alert('Gagal menghapus produk')
+    }
     setDeleteConfirm(null)
   }
 
@@ -290,13 +365,10 @@ export default function AdminProduk() {
       {showModal && (
         <ModalProduk
           data={editData}
+          outlets={outlets}
           onClose={() => { setShowModal(false); setEditData(null) }}
-          onSave={(item) => {
-            if (editData) {
-              setProduk(prev => prev.map(p => p.id === editData.id ? { ...editData, ...item } : p))
-            } else {
-              setProduk(prev => [...prev, { ...item, id: Date.now(), status: item.status || 'aktif' }])
-            }
+          onSave={() => {
+            fetchData()
             setShowModal(false)
             setEditData(null)
           }}

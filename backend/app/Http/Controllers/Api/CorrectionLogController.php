@@ -29,6 +29,30 @@ class CorrectionLogController extends Controller
         ]);
     }
 
+    // GET detail log koreksi
+    public function show(Request $request, $id)
+    {
+        $outletIds = $request->user()->outlets()->pluck('outlets.id');
+
+        $log = CorrectionLog::whereHas('transaction', fn($q) =>
+            $q->whereIn('outlet_id', $outletIds)
+        )
+        ->with(['transaction:id,transaction_code', 'correctedBy:id,name', 'outlet:id,nama', 'auditLog'])
+        ->find($id);
+
+        if (!$log) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Log koreksi tidak ditemukan.',
+            ], 404);
+        }
+
+        return response()->json([
+            'success' => true,
+            'data'    => $log,
+        ]);
+    }
+
     // POST buat koreksi transaksi
     public function store(Request $request)
     {
