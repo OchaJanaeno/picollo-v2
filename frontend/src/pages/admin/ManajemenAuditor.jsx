@@ -2,15 +2,18 @@ import { useState, useEffect, useRef } from 'react'
 import Layout from '../../components/Layout'
 import LoadingSpinner from '../../components/LoadingSpinner'
 import ErrorState from '../../components/ErrorState'
+import { auditorService } from '../../services/auditorService'
+import { outletService } from '../../services/outletService'
 
 // ── Modal Buat Akun Auditor ──
 // Sama konsepnya dengan buat akun kasir
-function ModalBuatAuditor({ onClose, onSave }) {
+function ModalBuatAuditor({ outlets, onClose, onSave }) {
   const [form, setForm] = useState({
     nama: '',
     email: '',
     password: '',
     instansi: '', // Nama KAP / perusahaan auditor
+    outlet_id: '',
   })
   const [foto, setFoto]             = useState(null)
   const [fotoPreview, setFotoPreview] = useState(null)
@@ -47,6 +50,7 @@ function ModalBuatAuditor({ onClose, onSave }) {
     else if (!/^[A-Za-z\s]+$/.test(form.nama)) e.nama = 'Nama hanya boleh huruf'
     if (!form.email)   e.email   = 'Email tidak boleh kosong'
     if (!form.instansi) e.instansi = 'Nama instansi tidak boleh kosong'
+    if (!form.outlet_id) e.outlet_id = 'Pilih outlet untuk auditor ini'
     if (!form.password || form.password.length < 8)
       e.password = 'Password minimal 8 karakter'
     return e
@@ -57,24 +61,39 @@ function ModalBuatAuditor({ onClose, onSave }) {
     if (Object.keys(e).length) { setErrors(e); return }
     setLoading(true)
     try {
-      // TODO backend siap → uncomment:
-      // const formData = new FormData()
-      // Object.entries(form).forEach(([k, v]) => formData.append(k, v))
-      // formData.append('role', 'auditor')
-      // if (foto instanceof File) formData.append('foto', foto)
-      // const res = await auditorService.create(formData)
-      // onSave(res.data.data)
-
-      // Dummy sementara
-      onSave({
-        ...form,
-        id: Date.now(),
-        status: 'aktif',
-        foto: fotoPreview,
+      const payload = {
+        name: form.nama,
+        email: form.email,
+        password: form.password,
+        password_confirmation: form.password,
+        outlet_id: parseInt(form.outlet_id),
+        instansi: form.instansi,
+      }
+      const res = await auditorService.create(payload)
+      const newAuditorObj = {
+        id: res.data.data.id,
+        nama: res.data.data.name,
+        email: res.data.data.email,
+        instansi: res.data.data.instansi,
+        outlet: outlets.find(o => o.id == res.data.data.outlet_id)?.nama || '-',
         bergabung: new Date().toLocaleDateString('id-ID'),
-      })
+        status: 'aktif',
+        password: form.password,
+      }
+      onSave(newAuditorObj)
     } catch (err) {
-      setErrors({ global: err.response?.data?.message || 'Gagal membuat akun auditor' })
+      if (err.response?.data?.errors) {
+        const apiErrors = err.response.data.errors
+        const formErrors = {}
+        if (apiErrors.name) formErrors.nama = apiErrors.name[0]
+        if (apiErrors.email) formErrors.email = apiErrors.email[0]
+        if (apiErrors.password) formErrors.password = apiErrors.password[0]
+        if (apiErrors.outlet_id) formErrors.outlet_id = apiErrors.outlet_id[0]
+        if (apiErrors.instansi) formErrors.instansi = apiErrors.instansi[0]
+        setErrors(formErrors)
+      } else {
+        setErrors({ global: err.response?.data?.message || 'Gagal membuat akun auditor' })
+      }
     } finally { setLoading(false) }
   }
 
@@ -207,6 +226,19 @@ function ModalBuatAuditor({ onClose, onSave }) {
             </div>
             {errors.password && <p className="text-xs text-red-500 mt-1">{errors.password}</p>}
           </div>
+
+          {/* Outlet */}
+          <div>
+            <label className="text-zinc-700 text-sm font-semibold mb-1.5 block">Assign ke Outlet</label>
+            <select value={form.outlet_id} onChange={e => set('outlet_id', e.target.value)}
+              className={inputCls('outlet_id') + ' bg-white'}>
+              <option value="">-- Pilih Outlet --</option>
+              {outlets.map(o => (
+                <option key={o.id} value={o.id}>{o.nama}</option>
+              ))}
+            </select>
+            {errors.outlet_id && <p className="text-xs text-red-500 mt-1">{errors.outlet_id}</p>}
+          </div>
         </div>
 
         {/* Footer modal */}
@@ -307,6 +339,7 @@ function ModalKredensial({ auditor, onClose }) {
 export default function ManajemenAuditor() {
   // State untuk data auditor
   const [data, setData]         = useState([])
+  const [outlets, setOutlets]   = useState([])
   const [loading, setLoading]   = useState(true)
   const [error, setError]     = useState(null)
   const [search, setSearch]     = useState('')
@@ -317,30 +350,47 @@ export default function ManajemenAuditor() {
   useEffect(() => { fetchData() }, [])
 
   const fetchData = async () => {
-  setLoading(true)
+    setLoading(true)
+    setError(null)
+    try {
+      const outletRes = await outletService.getAll()
+      setOutlets(outletRes.data.data || [])
 
-  try {
-    // TODO: ambil data auditor dari backend
-    // const res = await auditorService.getAll()
-    // setData(res.data.data || [])
-
-    setData([])
-
-  } catch {
-    setData([])
-  } finally {
-    setLoading(false)
+      const res = await auditorService.getAll()
+      const mappedAuditors = (res.data.data || []).map(a => ({
+        id: a.id,
+        nama: a.name,
+        email: a.email,
+        instansi: a.instansi || '-',
+        outlet: a.outlets?.[0]?.nama || '-',
+        bergabung: a.created_at ? new Date(a.created_at).toLocaleDateString('id-ID') : '-',
+        status: a.is_active ? 'aktif' : 'nonaktif',
+      }))
+      setData(mappedAuditors)
+    } catch {
+      setError('Gagal memuat data auditor')
+      setData([])
+      setOutlets([])
+    } finally {
+      setLoading(false)
+    }
   }
-}
 
   // Toggle status aktif/nonaktif
-  const handleToggle = (id) => {
-    // TODO: await auditorService.toggleStatus(id)
-    setData(prev => prev.map(a =>
-      a.id === id
-        ? { ...a, status: a.status === 'aktif' ? 'nonaktif' : 'aktif' }
-        : a
-    ))
+  const handleToggle = async (id) => {
+    const auditor = data.find(a => a.id === id)
+    if (!auditor) return
+    const newStatus = auditor.status === 'aktif' ? 'nonaktif' : 'aktif'
+    try {
+      await auditorService.toggleStatus(id, newStatus)
+      setData(prev => prev.map(a =>
+        a.id === id
+          ? { ...a, status: newStatus }
+          : a
+      ))
+    } catch (err) {
+      alert('Gagal mengubah status auditor')
+    }
   }
 
   // Saat akun baru berhasil dibuat
@@ -378,6 +428,7 @@ export default function ManajemenAuditor() {
       {/* Modal buat akun */}
       {showBuat && (
         <ModalBuatAuditor
+          outlets={outlets}
           onClose={() => setShowBuat(false)}
           onSave={handleSave}
         />

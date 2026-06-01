@@ -28,6 +28,7 @@ class KasirController extends Controller
                 'is_active'     => $k->is_active,
                 'last_login_at' => $k->last_login_at,
                 'outlets'       => $k->outlets,
+                'created_at'    => $k->created_at,
             ]);
 
         return response()->json([
