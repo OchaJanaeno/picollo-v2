@@ -18,7 +18,7 @@ function ModalStruk({ transaksi, onClose, onBaru }) {
               <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor"
                 viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                  d="M5 13l4 4L19 7"/>
+                  d="M5 13l4 4L19 7" />
               </svg>
             </div>
             <h3 className="font-bold text-zinc-900">Pembayaran Berhasil</h3>
@@ -97,7 +97,7 @@ function ModalStruk({ transaksi, onClose, onBaru }) {
                        justify-center gap-1.5">
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/>
+                d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
             </svg>
             Print
           </button>
@@ -115,16 +115,16 @@ function ModalStruk({ transaksi, onClose, onBaru }) {
 // ── Modal Pembayaran ──
 function ModalPembayaran({ keranjang, total, kasirNama, onClose, onSuccess }) {
   // metode hanya QRIS dan Tunai (Transfer dihapus)
-  const [metode, setMetode]           = useState('QRIS')
+  const [metode, setMetode] = useState('QRIS')
   const [uangDiterima, setUangDiterima] = useState('')
-  const [loading, setLoading]         = useState(false)
-  const [errorUang, setErrorUang]     = useState('')
-  const [struk, setStruk]             = useState(null) // null = belum bayar, object = tampilkan struk
+  const [loading, setLoading] = useState(false)
+  const [errorUang, setErrorUang] = useState('')
+  const [struk, setStruk] = useState(null) // null = belum bayar, object = tampilkan struk
 
   // Hitung kembalian real-time
-  const uangNum   = Number(uangDiterima) || 0
+  const uangNum = Number(uangDiterima) || 0
   const kembalian = uangNum >= total ? uangNum - total : 0
-  const kurang    = uangNum > 0 && uangNum < total ? total - uangNum : 0
+  const kurang = uangNum > 0 && uangNum < total ? total - uangNum : 0
 
   const handleBayar = async () => {
     // Validasi frontend untuk Tunai
@@ -158,7 +158,7 @@ function ModalPembayaran({ keranjang, total, kasirNama, onClose, onSuccess }) {
         uangDiterima: uangNum,
         kembalian,
       })
-    } catch {}
+    } catch { }
     finally { setLoading(false) }
   }
 
@@ -186,7 +186,7 @@ function ModalPembayaran({ keranjang, total, kasirNama, onClose, onSuccess }) {
           <button onClick={onClose} className="text-zinc-400 hover:text-zinc-700">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                d="M6 18L18 6M6 6l12 12"/>
+                d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
         </div>
@@ -239,7 +239,7 @@ function ModalPembayaran({ keranjang, total, kasirNama, onClose, onSuccess }) {
                       ? 'bg-red-800 border-red-800 text-white'
                       : 'bg-white border-zinc-200 text-zinc-500 hover:border-red-300 hover:bg-red-50'}`}>
                   <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={m.icon}/>
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={m.icon} />
                   </svg>
                   <div className="text-center">
                     <p className="text-sm font-bold">{m.label}</p>
@@ -261,7 +261,7 @@ function ModalPembayaran({ keranjang, total, kasirNama, onClose, onSuccess }) {
                 <svg className="w-20 h-20 text-zinc-300" fill="none" stroke="currentColor"
                   viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
-                    d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/>
+                    d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
                 </svg>
               </div>
               <p className="text-zinc-900 font-bold text-lg mb-1">
@@ -294,13 +294,13 @@ function ModalPembayaran({ keranjang, total, kasirNama, onClose, onSuccess }) {
                   className={`w-full border rounded-xl px-4 py-3 text-sm text-zinc-900
                               focus:outline-none transition-colors font-mono text-lg
                               ${errorUang
-                                ? 'border-red-400 bg-red-50'
-                                : 'border-zinc-300 focus:border-red-800'}`}/>
+                      ? 'border-red-400 bg-red-50'
+                      : 'border-zinc-300 focus:border-red-800'}`} />
                 {errorUang && (
                   <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
                     <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                        d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                        d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                     </svg>
                     {errorUang}
                   </p>
@@ -313,7 +313,7 @@ function ModalPembayaran({ keranjang, total, kasirNama, onClose, onSuccess }) {
                       onClick={() => { setUangDiterima(String(n)); setErrorUang('') }}
                       className="text-xs bg-zinc-100 hover:bg-zinc-200 text-zinc-700
                                  font-semibold px-3 py-1.5 rounded-lg transition-colors">
-                      {(n/1000)}rb
+                      {(n / 1000)}rb
                     </button>
                   ))}
                 </div>
@@ -355,14 +355,14 @@ function ModalPembayaran({ keranjang, total, kasirNama, onClose, onSuccess }) {
                        flex items-center justify-center gap-2">
             {loading
               ? <span className="flex items-center gap-2">
-                  <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10"
-                      stroke="currentColor" strokeWidth="4"/>
-                    <path className="opacity-75" fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
-                  </svg>
-                  Memproses...
-                </span>
+                <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10"
+                    stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                </svg>
+                Memproses...
+              </span>
               : `Konfirmasi ${metode} • Rp ${total.toLocaleString('id-ID')}`
             }
           </button>
@@ -376,11 +376,11 @@ function ModalPembayaran({ keranjang, total, kasirNama, onClose, onSuccess }) {
 export default function KasirTransaksi() {
   const { user } = useAuthStore()
   const [produkList, setProdukList] = useState([])
-  const [keranjang, setKeranjang]   = useState([])
-  const [search, setSearch]         = useState('')
-  const [kategori, setKategori]     = useState('Semua')
-  const [showBayar, setShowBayar]   = useState(false)
-  const [toast, setToast]           = useState(null)
+  const [keranjang, setKeranjang] = useState([])
+  const [search, setSearch] = useState('')
+  const [kategori, setKategori] = useState('Semua')
+  const [showBayar, setShowBayar] = useState(false)
+  const [toast, setToast] = useState(null)
 
   useEffect(() => { fetchProduk() }, [])
 
@@ -409,18 +409,18 @@ export default function KasirTransaksi() {
   const updateQty = (id, delta) => {
     setKeranjang(prev =>
       prev.map(k => k.id === id ? { ...k, qty: Math.max(0, k.qty + delta) } : k)
-          .filter(k => k.qty > 0)
+        .filter(k => k.qty > 0)
     )
   }
 
   const hapusItem = (id) => setKeranjang(prev => prev.filter(k => k.id !== id))
 
-  const total     = keranjang.reduce((s, k) => s + k.harga * k.qty, 0)
+  const total = keranjang.reduce((s, k) => s + k.harga * k.qty, 0)
   const totalItem = keranjang.reduce((s, k) => s + k.qty, 0)
 
   const kategoriList = ['Semua', ...new Set(produkList.map(p => p.kategori).filter(Boolean))]
-  const filtered     = produkList.filter(p => {
-    const matchSearch   = p.nama?.toLowerCase().includes(search.toLowerCase())
+  const filtered = produkList.filter(p => {
+    const matchSearch = p.nama?.toLowerCase().includes(search.toLowerCase())
     const matchKategori = kategori === 'Semua' || p.kategori === kategori
     return matchSearch && matchKategori
   })
@@ -431,7 +431,7 @@ export default function KasirTransaksi() {
         <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-zinc-900 border
                         border-zinc-700 rounded-xl px-4 py-3 flex items-center gap-2 shadow-xl">
           <svg className="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7"/>
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
           </svg>
           <span className="text-white text-sm font-medium">{toast}</span>
         </div>
@@ -456,13 +456,6 @@ export default function KasirTransaksi() {
             <p className="text-zinc-500 text-sm mt-0.5">Pilih produk dan proses pembayaran</p>
           </div>
 
-          <div className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-3">
-            <p className="text-blue-700 text-xs">
-              <span className="font-bold">💡 Tips:</span> Klik <strong>+</strong> untuk tambah ke
-              keranjang. Pembayaran tersedia via <strong>QRIS</strong> dan <strong>Tunai</strong>.
-            </p>
-          </div>
-
           <div className="bg-white rounded-2xl border border-zinc-200 p-4 space-y-3">
             <div>
               <p className="text-zinc-700 text-sm font-semibold mb-2">Cari Produk</p>
@@ -470,7 +463,7 @@ export default function KasirTransaksi() {
                 <svg className="w-4 h-4 text-zinc-400 absolute left-3.5 top-1/2 -translate-y-1/2"
                   fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0"/>
+                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0" />
                 </svg>
                 <input type="text" value={search} onChange={e => setSearch(e.target.value)}
                   placeholder="Ketik nama produk..."
@@ -505,7 +498,7 @@ export default function KasirTransaksi() {
                   <svg className="w-8 h-8 text-zinc-400" fill="none" stroke="currentColor"
                     viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                      d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+                      d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
                   </svg>
                 </div>
                 <p className="text-zinc-900 font-semibold text-sm">Belum ada produk</p>
@@ -522,13 +515,13 @@ export default function KasirTransaksi() {
                     <div className="h-28 bg-zinc-100 flex items-center justify-center overflow-hidden">
                       {produk.foto
                         ? <img src={produk.foto} alt={produk.nama}
-                            className="w-full h-full object-cover group-hover:scale-105
+                          className="w-full h-full object-cover group-hover:scale-105
                                        transition-transform duration-300"/>
                         : <svg className="w-10 h-10 text-zinc-300" fill="none"
-                            stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
-                              d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-                          </svg>
+                          stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
+                            d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
                       }
                     </div>
                     <div className="p-3">
@@ -549,7 +542,7 @@ export default function KasirTransaksi() {
                           <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor"
                             viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                              d="M12 4v16m8-8H4"/>
+                              d="M12 4v16m8-8H4" />
                           </svg>
                         </button>
                       </div>
@@ -569,7 +562,7 @@ export default function KasirTransaksi() {
                 <svg className="w-5 h-5 text-red-800" fill="none" stroke="currentColor"
                   viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                    d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/>
+                    d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
                 </svg>
                 <h3 className="font-bold text-zinc-900">Keranjang</h3>
               </div>
@@ -591,7 +584,7 @@ export default function KasirTransaksi() {
                   <svg className="w-8 h-8 text-zinc-400" fill="none" stroke="currentColor"
                     viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                      d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/>
+                      d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
                   </svg>
                 </div>
                 <p className="text-zinc-500 text-sm font-medium">Keranjang kosong</p>
@@ -606,12 +599,12 @@ export default function KasirTransaksi() {
                                       justify-center shrink-0 overflow-hidden">
                         {item.foto
                           ? <img src={item.foto} alt={item.nama}
-                              className="w-full h-full object-cover"/>
+                            className="w-full h-full object-cover" />
                           : <svg className="w-5 h-5 text-zinc-400" fill="none"
-                              stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                                d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
-                            </svg>
+                            stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                              d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                          </svg>
                         }
                       </div>
                       <div className="flex-1 min-w-0">
@@ -621,7 +614,7 @@ export default function KasirTransaksi() {
                             className="text-zinc-400 hover:text-red-600 transition-colors shrink-0">
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                             </svg>
                           </button>
                         </div>
@@ -680,7 +673,7 @@ export default function KasirTransaksi() {
                          flex items-center justify-center gap-2">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                  d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/>
+                  d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
               </svg>
               {keranjang.length === 0
                 ? 'Pilih produk terlebih dahulu'

@@ -6,10 +6,10 @@ import Layout from '../../components/Layout'
 const isValidHash = (h) => /^[a-fA-F0-9]{64}$/.test(h.trim())
 
 export default function AuditorVerifikasi() {
-  const [hash, setHash]     = useState('')
+  const [hash, setHash] = useState('')
   const [loading, setLoading] = useState(false)
-  const [error, setError]   = useState('') // error validasi frontend
-  const [hasil, setHasil]   = useState(null) // null | { status, transaksi }
+  const [error, setError] = useState('') // error validasi frontend
+  const [hasil, setHasil] = useState(null) // null | { status, transaksi }
 
   const handleVerifikasi = async () => {
     // Reset state
@@ -86,25 +86,6 @@ export default function AuditorVerifikasi() {
           </p>
         </div>
 
-        {/* Penjelasan cara kerja */}
-        <div className="bg-blue-50 border border-blue-200 rounded-2xl p-5">
-          <p className="text-blue-800 font-semibold text-sm mb-2">
-            🔍 Cara Kerja Verifikasi
-          </p>
-          <div className="space-y-1.5">
-            {[
-              'Setiap transaksi menghasilkan hash unik menggunakan HMAC-SHA256',
-              'Hash disimpan di blockchain yang tidak bisa diubah',
-              'Masukkan hash transaksi → sistem bandingkan dengan blockchain',
-              'Cocok = transaksi VALID | Tidak cocok = kemungkinan FRAUD',
-            ].map((s, i) => (
-              <p key={i} className="text-blue-700 text-xs flex items-start gap-1.5">
-                <span className="shrink-0 mt-0.5">•</span>{s}
-              </p>
-            ))}
-          </div>
-        </div>
-
         {/* Form Input Hash */}
         <div className="bg-white rounded-2xl border border-zinc-200 p-6">
           <label className="text-zinc-700 text-sm font-semibold mb-2 block">
@@ -123,8 +104,8 @@ export default function AuditorVerifikasi() {
             className={`w-full border rounded-xl px-4 py-3 text-sm font-mono
                         focus:outline-none transition-colors resize-none
                         ${error
-                          ? 'border-red-400 bg-red-50 text-red-900'
-                          : 'border-zinc-300 focus:border-red-800 text-zinc-900'}`}/>
+                ? 'border-red-400 bg-red-50 text-red-900'
+                : 'border-zinc-300 focus:border-red-800 text-zinc-900'}`} />
 
           {/* Error validasi frontend */}
           {error && (
@@ -132,7 +113,7 @@ export default function AuditorVerifikasi() {
               <svg className="w-4 h-4 text-red-500 shrink-0 mt-0.5" fill="none"
                 stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
               </svg>
               <p className="text-xs text-red-600">{error}</p>
             </div>
@@ -159,21 +140,21 @@ export default function AuditorVerifikasi() {
                 bg-zinc-900 hover:bg-red-900 disabled:bg-zinc-300 text-white`}>
               {loading
                 ? <>
-                    <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10"
-                        stroke="currentColor" strokeWidth="4"/>
-                      <path className="opacity-75" fill="currentColor"
-                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
-                    </svg>
-                    Memverifikasi...
-                  </>
+                  <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10"
+                      stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                  </svg>
+                  Memverifikasi...
+                </>
                 : <>
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                        d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
-                    </svg>
-                    Verifikasi Hash
-                  </>
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                      d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                  </svg>
+                  Verifikasi Hash
+                </>
               }
             </button>
           </div>
@@ -197,7 +178,7 @@ export default function AuditorVerifikasi() {
                     <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor"
                       viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                        d="M5 13l4 4L19 7"/>
+                        d="M5 13l4 4L19 7" />
                     </svg>
                   </div>
                   <div>
@@ -214,11 +195,11 @@ export default function AuditorVerifikasi() {
                   </p>
                   {[
                     { label: 'ID Transaksi', val: hasil.transaksi.id },
-                    { label: 'Nominal',      val: hasil.transaksi.nominal },
-                    { label: 'Produk',       val: hasil.transaksi.produk },
-                    { label: 'Kasir',        val: hasil.transaksi.kasir },
-                    { label: 'Outlet',       val: hasil.transaksi.outlet },
-                    { label: 'Waktu',        val: hasil.transaksi.waktu },
+                    { label: 'Nominal', val: hasil.transaksi.nominal },
+                    { label: 'Produk', val: hasil.transaksi.produk },
+                    { label: 'Kasir', val: hasil.transaksi.kasir },
+                    { label: 'Outlet', val: hasil.transaksi.outlet },
+                    { label: 'Waktu', val: hasil.transaksi.waktu },
                   ].map(r => (
                     <div key={r.label} className="flex justify-between text-sm">
                       <span className="text-zinc-500">{r.label}</span>
@@ -246,7 +227,7 @@ export default function AuditorVerifikasi() {
                     <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor"
                       viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                        d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                        d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                     </svg>
                   </div>
                   <div>
@@ -298,7 +279,7 @@ export default function AuditorVerifikasi() {
                   <svg className="w-6 h-6 text-zinc-500" fill="none" stroke="currentColor"
                     viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0"/>
+                      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0" />
                   </svg>
                 </div>
                 <div>
