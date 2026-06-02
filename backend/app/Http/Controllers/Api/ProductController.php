@@ -12,12 +12,22 @@ class ProductController extends Controller
     // GET semua produk
     public function index(Request $request)
     {
-        $outletIds = $request->user()->outlets()->pluck('outlets.id');
-
-        $products = Product::whereIn('outlet_id', $outletIds)
-            ->with('outlet:id,nama')
-            ->orderByDesc('created_at')
-            ->get();
+        // Jika admin, kembalikan semua produk. Jika kasir, kembalikan produk outletnya saja.
+        if ($request->user()->hasRole('admin')) {
+            $products = Product::with('outlets:id,nama')
+                ->orderByDesc('created_at')
+                ->get();
+        } else {
+            $outletIds = $request->user()->outlets()->pluck('outlets.id');
+            $products = Product::whereHas('outlets', function($q) use ($outletIds) {
+                $q->whereIn('outlets.id', $outletIds);
+            })
+                ->with(['outlets' => function($q) use ($outletIds) {
+                    $q->whereIn('outlets.id', $outletIds);
+                }])
+                ->orderByDesc('created_at')
+                ->get();
+        }
 
         return response()->json([
             'success' => true,
@@ -28,11 +38,18 @@ class ProductController extends Controller
     // GET detail produk
     public function show(Request $request, $id)
     {
-        $outletIds = $request->user()->outlets()->pluck('outlets.id');
-
-        $product = Product::whereIn('outlet_id', $outletIds)
-            ->with('outlet:id,nama')
-            ->find($id);
+        if ($request->user()->hasRole('admin')) {
+            $product = Product::with('outlets:id,nama')->find($id);
+        } else {
+            $outletIds = $request->user()->outlets()->pluck('outlets.id');
+            $product = Product::whereHas('outlets', function($q) use ($outletIds) {
+                $q->whereIn('outlets.id', $outletIds);
+            })
+                ->with(['outlets' => function($q) use ($outletIds) {
+                    $q->whereIn('outlets.id', $outletIds);
+                }])
+                ->find($id);
+        }
 
         if (!$product) {
             return response()->json([
@@ -50,32 +67,19 @@ class ProductController extends Controller
     // POST buat produk baru
     public function store(Request $request)
     {
-        $outletIds = $request->user()->outlets()->pluck('outlets.id');
-
-        // FIX: Jika admin tidak punya outlet, langsung tolak sebelum validasi 'in:' kosong error
-        if ($outletIds->isEmpty()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Anda belum memiliki outlet. Buat outlet terlebih dahulu.',
-            ], 403);
-        }
-
         $validator = Validator::make($request->all(), [
-            'outlet_id'  => 'required|integer|in:' . $outletIds->join(','),
-            'nama'       => 'required|string|max:255',
-            'kategori'   => 'nullable|string|max:255',
-            'harga'      => 'required|numeric|min:0',
-            'satuan'     => 'nullable|string|max:255',
-            'modal'      => 'nullable|numeric|min:0',
-            'stok'       => 'nullable|integer|min:0',
-            'gambar_url' => 'nullable|string',
+            'nama'         => 'required|string|max:255',
+            'kategori'     => 'nullable|string|max:255',
+            'harga'        => 'required|numeric|min:0',
+            'satuan'       => 'nullable|string|max:255',
+            'modal'        => 'nullable|numeric|min:0',
+            'stok'         => 'nullable|integer|min:0', // Legacy stok (optional)
+            'gambar_url'   => 'nullable|string',
         ], [
-            'outlet_id.required' => 'Outlet wajib dipilih.',
-            'outlet_id.in'       => 'Anda tidak memiliki akses ke outlet tersebut.',
-            'nama.required'      => 'Nama produk wajib diisi.',
-            'harga.required'     => 'Harga wajib diisi.',
-            'harga.numeric'      => 'Harga harus berupa angka.',
-            'harga.min'          => 'Harga tidak boleh minus.',
+            'nama.required'       => 'Nama produk wajib diisi.',
+            'harga.required'      => 'Harga wajib diisi.',
+            'harga.numeric'       => 'Harga harus berupa angka.',
+            'harga.min'           => 'Harga tidak boleh minus.',
         ]);
 
         if ($validator->fails()) {
@@ -99,7 +103,6 @@ class ProductController extends Controller
         }
 
         $product = Product::create([
-            'outlet_id'  => $request->outlet_id,
             'nama'       => $request->nama,
             'kategori'   => $request->kategori,
             'harga'      => $request->harga,
@@ -110,19 +113,19 @@ class ProductController extends Controller
             'is_active'  => true,
         ]);
 
+        // Tidak ada lagi sinkronisasi otomatis ke outlet_ids saat create master katalog
+        
         return response()->json([
             'success' => true,
-            'message' => 'Produk berhasil ditambahkan.',
-            'data'    => $product->load('outlet:id,nama'),
+            'message' => 'Produk berhasil ditambahkan ke katalog master.',
+            'data'    => $product->load('outlets:id,nama'),
         ], 201);
     }
 
     // PUT update produk
     public function update(Request $request, $id)
     {
-        $outletIds = $request->user()->outlets()->pluck('outlets.id');
-
-        $product = Product::whereIn('outlet_id', $outletIds)->find($id);
+        $product = Product::find($id);
 
         if (!$product) {
             return response()->json([
@@ -174,16 +177,14 @@ class ProductController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Produk berhasil diupdate.',
-            'data'    => $product->fresh()->load('outlet:id,nama'),
+            'data'    => $product->fresh()->load('outlets:id,nama'),
         ]);
     }
 
     // DELETE produk
     public function destroy(Request $request, $id)
     {
-        $outletIds = $request->user()->outlets()->pluck('outlets.id');
-
-        $product = Product::whereIn('outlet_id', $outletIds)->find($id);
+        $product = Product::find($id);
 
         if (!$product) {
             return response()->json([

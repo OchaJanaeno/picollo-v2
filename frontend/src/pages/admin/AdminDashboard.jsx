@@ -4,7 +4,9 @@ import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer, BarChart, Bar
 } from 'recharts'
-import api from '../../services/api'
+import { dashboardService } from '../../services/dashboardService'
+import { transaksiService } from '../../services/transaksiService'
+import { outletService } from '../../services/outletService'
 
 const formatRupiah = (num) => {
   if (!num && num !== 0) return '-'
@@ -70,9 +72,9 @@ export default function AdminDashboard() {
     try {
       // FIX: route yang benar sesuai routes/api.php
       const [statsRes, txRes, outletRes] = await Promise.all([
-        api.get('/dashboard/admin'),
-        api.get('/transactions?per_page=5'),
-        api.get('/outlets'),
+        dashboardService.getAdminStats(period),
+        transaksiService.getAll({ per_page: 5 }),
+        outletService.getAll(),
       ])
 
       const statData = statsRes.data.data?.stat_cards || statsRes.data.data || null

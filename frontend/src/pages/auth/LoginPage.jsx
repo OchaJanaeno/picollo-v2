@@ -188,8 +188,8 @@ const LoginPage = () => {
 
                 <div className="center">
                     <div className="card">
-                        <div className="card-title">Halo, Owner!</div>
-                        <div className="card-sub">Semoga Bisnismu Berjalan Dengan Lancar Ya!</div>
+                        <div className="card-title">Selamat Datang!</div>
+                        <div className="card-sub">Masuk Untuk Melanjutkan</div>
 
                         {error && (
                             <div className="alert-error">

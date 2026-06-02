@@ -7,7 +7,6 @@ use Illuminate\Database\Eloquent\Model;
 class Product extends Model
 {
     protected $fillable = [
-        'outlet_id',
         'nama',
         'kategori',
         'harga',
@@ -24,9 +23,9 @@ class Product extends Model
         'modal'     => 'decimal:2',
     ];
 
-    public function outlet()
+    public function outlets()
     {
-        return $this->belongsTo(Outlet::class);
+        return $this->belongsToMany(Outlet::class)->withPivot('stok');
     }
 
     public function transactionItems()

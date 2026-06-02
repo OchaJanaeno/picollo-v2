@@ -164,12 +164,68 @@ class AuthController extends Controller
         return response()->json([
             'success' => true,
             'data'    => [
-                'id'      => $user->id,
-                'name'    => $user->name,
-                'email'   => $user->email,
-                'role'    => $user->getRoleNames()->first(),
-                'outlets' => $user->outlets,
+                'id'         => $user->id,
+                'name'       => $user->name,
+                'email'      => $user->email,
+                'role'       => $user->getRoleNames()->first(),
+                'no_telepon' => $user->no_telepon,
+                'instansi'   => $user->instansi,
+                'avatar_url' => $user->avatar_url,
+                'outlets'    => $user->outlets,
             ]
+        ]);
+    }
+
+    // UPDATE PROFILE
+    public function updateProfile(Request $request)
+    {
+        $user = JWTAuth::user();
+
+        $validator = Validator::make($request->all(), [
+            'name'       => 'nullable|string|max:255',
+            'no_telepon' => 'nullable|string|max:20',
+            'instansi'   => 'nullable|string|max:255',
+            'avatar'     => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validasi gagal.',
+                'errors'  => $validator->errors()
+            ], 422);
+        }
+
+        $dataToUpdate = [];
+        if ($request->has('name')) $dataToUpdate['name'] = $request->name;
+        if ($request->has('no_telepon')) $dataToUpdate['no_telepon'] = $request->no_telepon;
+        if ($request->has('instansi')) $dataToUpdate['instansi'] = $request->instansi;
+
+        if ($request->hasFile('avatar')) {
+            $file = $request->file('avatar');
+            $filename = 'avatar_' . $user->id . '_' . time() . '.' . $file->getClientOriginalExtension();
+            // Move file to public/avatars to ensure it is directly accessible
+            $file->move(public_path('avatars'), $filename);
+            
+            // Delete old avatar if it exists
+            if ($user->avatar_url) {
+                $oldPath = public_path(parse_url($user->avatar_url, PHP_URL_PATH));
+                if (file_exists($oldPath) && is_file($oldPath)) {
+                    @unlink($oldPath);
+                }
+            }
+            
+            $dataToUpdate['avatar_url'] = url('avatars/' . $filename);
+        }
+
+        if (!empty($dataToUpdate)) {
+            $user->update($dataToUpdate);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Profil berhasil diperbarui.',
+            'data'    => $user->fresh()
         ]);
     }
 

@@ -13,7 +13,7 @@ export default function AuditorLogKoreksi() {
   const fetchData = async () => {
     setLoading(true)
     try {
-      const res = await logKoreksiService.getAll()
+      const res = await logKoreksiService.getAll({ all: true })
       const raw = res.data.data?.data || res.data.data || []
       const mapped = raw.map(l => ({
         id: l.id,

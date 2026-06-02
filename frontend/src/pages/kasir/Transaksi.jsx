@@ -417,7 +417,7 @@ export default function KasirTransaksi() {
         kategori: p.kategori || 'Lainnya',
         harga: p.harga,
         foto: p.gambar_url || null,
-        stok: p.stok,
+        stok: p.outlets?.[0]?.pivot?.stok || 0,
       }))
       setProdukList(mapped)
     } catch { setProdukList([]) }
@@ -431,17 +431,36 @@ export default function KasirTransaksi() {
   const addToKeranjang = (produk) => {
     setKeranjang(prev => {
       const ex = prev.find(k => k.id === produk.id)
-      if (ex) return prev.map(k => k.id === produk.id ? { ...k, qty: k.qty + 1 } : k)
+      if (ex) {
+        if (ex.qty + 1 > produk.stok) {
+          showToast(`Stok tidak cukup!`)
+          return prev
+        }
+        return prev.map(k => k.id === produk.id ? { ...k, qty: k.qty + 1 } : k)
+      }
+      if (produk.stok < 1) {
+        showToast(`Stok habis!`)
+        return prev
+      }
       return [...prev, { ...produk, qty: 1 }]
     })
-    showToast(`${produk.nama} ditambahkan`)
+    if (produk.stok >= 1) showToast(`${produk.nama} ditambahkan`)
   }
 
   const updateQty = (id, delta) => {
-    setKeranjang(prev =>
-      prev.map(k => k.id === id ? { ...k, qty: Math.max(0, k.qty + delta) } : k)
-        .filter(k => k.qty > 0)
-    )
+    setKeranjang(prev => {
+      return prev.map(k => {
+        if (k.id === id) {
+          const newQty = k.qty + delta
+          if (newQty > k.stok) {
+            showToast(`Stok tidak cukup!`)
+            return k
+          }
+          return { ...k, qty: Math.max(0, newQty) }
+        }
+        return k
+      }).filter(k => k.qty > 0)
+    })
   }
 
   const hapusItem = (id) => setKeranjang(prev => prev.filter(k => k.id !== id))
@@ -567,16 +586,20 @@ export default function KasirTransaksi() {
                         <span className="text-red-800 font-bold text-sm">
                           Rp {Number(produk.harga).toLocaleString('id-ID')}
                         </span>
-                        <button onClick={() => addToKeranjang(produk)}
-                          className="w-8 h-8 bg-red-800 hover:bg-red-900 rounded-full
-                                     flex items-center justify-center transition-colors
-                                     shadow-md shadow-red-900/20">
-                          <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor"
-                            viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                              d="M12 4v16m8-8H4" />
-                          </svg>
-                        </button>
+                        <div className="flex flex-col items-end gap-1">
+                          <span className="text-zinc-500 text-xs font-semibold">Sisa: {produk.stok}</span>
+                          <button onClick={() => addToKeranjang(produk)}
+                            disabled={produk.stok <= 0}
+                            className="w-8 h-8 bg-red-800 hover:bg-red-900 disabled:bg-zinc-300 disabled:cursor-not-allowed rounded-full
+                                       flex items-center justify-center transition-colors
+                                       shadow-md shadow-red-900/20">
+                            <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor"
+                              viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                                d="M12 4v16m8-8H4" />
+                            </svg>
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>

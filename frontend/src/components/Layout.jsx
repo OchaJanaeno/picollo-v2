@@ -84,7 +84,7 @@ function Avatar({ foto, user, size = 'sm' }) {
   const dim   = size === 'sm' ? 'w-8 h-8 text-xs' : 'w-10 h-10 text-sm'
   const label = getUserName(user)[0]?.toUpperCase() || 'U'
   return foto
-    ? <img src={foto} alt="profil"
+    ? <img src={foto || user?.avatar_url} alt="profil"
         className={`${dim} rounded-full object-cover border-2 border-red-700`}/>
     : <div className={`${dim} bg-red-800 rounded-full flex items-center justify-center shrink-0`}>
         <span className="text-white font-bold">{label}</span>
@@ -182,7 +182,7 @@ function SidebarContent({ nav, collapsed, onClose }) {
       <div className="px-3 py-4 border-t border-zinc-800 space-y-1 shrink-0">
         {!collapsed && (
           <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-zinc-800/50">
-            <Avatar foto={user?.foto} user={user} size="sm"/>
+            <Avatar foto={user?.avatar_url || user?.foto} user={user} size="sm"/>
             <div className="flex-1 min-w-0">
               <p className="text-white text-xs font-semibold truncate">{displayName}</p>
               <p className="text-zinc-500 text-xs capitalize">{role}</p>
@@ -342,7 +342,7 @@ export default function Layout({ children }) {
                                     shadow-xl border border-zinc-200 z-50 overflow-hidden">
                       <div className="px-4 py-4 border-b border-zinc-100">
                         <div className="flex items-center gap-3">
-                          <Avatar foto={user?.foto} user={user} size="md"/>
+                          <Avatar foto={user?.avatar_url || user?.foto} user={user} size="md"/>
                           <div className="min-w-0">
                             <p className="text-sm font-bold text-zinc-900 truncate">
                               {displayName}
@@ -358,9 +358,9 @@ export default function Layout({ children }) {
                         </div>
                       </div>
 
-                      {role === 'admin' && (
+                      {role === 'admin' ? (
                         <div className="p-2">
-                          <NavLink to="/admin/pengaturan" onClick={() => setProfileOpen(false)}
+                          <NavLink to="/profil" onClick={() => setProfileOpen(false)}
                             className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm
                                        text-zinc-700 font-medium hover:bg-zinc-50 transition-colors">
                             <svg className="w-4 h-4 text-zinc-400" fill="none"
@@ -368,12 +368,10 @@ export default function Layout({ children }) {
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                                 d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
                             </svg>
-                            Profil & Pengaturan
+                            Profil Saya
                           </NavLink>
                         </div>
-                      )}
-
-                      {role === 'kasir' && (
+                      ) : (
                         <div className="px-4 py-3 border-b border-zinc-100">
                           <p className="text-xs text-zinc-400 text-center">
                             Hubungi Admin untuk mengubah profil

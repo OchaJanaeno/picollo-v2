@@ -16,6 +16,12 @@ class OutletController extends Controller
         $outlets = $request->user()
             ->outlets()
             ->withCount('products') // jumlah produk per outlet
+            ->withCount(['transactions as total_transaksi' => function ($query) {
+                $query->where('status', 'success');
+            }])
+            ->withSum(['transactions as total_omzet' => function ($query) {
+                $query->where('status', 'success');
+            }], 'total_amount')
             ->orderByDesc('created_at')
             ->get();
 
@@ -149,6 +155,65 @@ class OutletController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Outlet berhasil dihapus.',
+        ]);
+    }
+
+    // GET produk untuk outlet tertentu
+    public function getProducts(Request $request, $id)
+    {
+        $outlet = $request->user()->outlets()->find($id);
+
+        if (!$outlet) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Outlet tidak ditemukan.',
+            ], 404);
+        }
+
+        $products = $outlet->products()->withPivot('stok')->get();
+
+        return response()->json([
+            'success' => true,
+            'data'    => $products,
+        ]);
+    }
+
+    // POST sinkronisasi produk dan stok untuk outlet
+    public function syncProducts(Request $request, $id)
+    {
+        $outlet = $request->user()->outlets()->find($id);
+
+        if (!$outlet) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Outlet tidak ditemukan.',
+            ], 404);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'products' => 'present|array',
+            'products.*.id' => 'required|integer|exists:products,id',
+            'products.*.stok' => 'required|integer|min:0',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validasi gagal.',
+                'errors'  => $validator->errors(),
+            ], 422);
+        }
+
+        $syncData = [];
+        foreach ($request->products as $item) {
+            $syncData[$item['id']] = ['stok' => $item['stok']];
+        }
+
+        $outlet->products()->sync($syncData);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Menu dan stok berhasil diperbarui.',
         ]);
     }
 }

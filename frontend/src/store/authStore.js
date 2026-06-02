@@ -12,6 +12,11 @@ const useAuthStore = create((set) => ({
         set({ user, token, outlets });
     },
 
+    setUser: (user) => {
+        localStorage.setItem('user', JSON.stringify(user));
+        set({ user });
+    },
+
     // Kalau perlu update outlets saja (misal setelah tambah outlet baru)
     setOutlets: (outlets) => {
         localStorage.setItem('outlets', JSON.stringify(outlets));

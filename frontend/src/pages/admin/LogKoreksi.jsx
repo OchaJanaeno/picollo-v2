@@ -12,9 +12,10 @@ export default function AdminLogKoreksi() {
   const fetchData = async () => {
     setLoading(true)
     try {
-      const res = await logKoreksiService.getAll()
+      const res = await logKoreksiService.getAll({ all: true })
       const raw = res.data.data?.data || res.data.data || []
       const mapped = raw.map(l => ({
+        id: l.id,
         id_transaksi: l.transaction?.transaction_code || '-',
         kasir: l.corrected_by?.name || l.correctedBy?.name || '-',
         outlet: l.outlet?.nama || '-',
@@ -31,6 +32,16 @@ export default function AdminLogKoreksi() {
       setData([])
     }
     finally { setLoading(false) }
+  }
+
+  const handleApprove = async (id) => {
+    if (!window.confirm('Apakah Anda yakin ingin menyetujui koreksi ini?')) return
+    try {
+      await logKoreksiService.approve(id)
+      fetchData()
+    } catch (err) {
+      alert('Gagal menyetujui koreksi: ' + (err.response?.data?.message || err.message))
+    }
   }
 
   const filtered = data.filter(l =>
@@ -61,7 +72,7 @@ export default function AdminLogKoreksi() {
             <table className="w-full">
               <thead>
                 <tr className="border-b border-zinc-100">
-                  {['ID Transaksi', 'Kasir', 'Outlet', 'Tipe Koreksi', 'Nilai Lama', 'Nilai Baru', 'Waktu', 'Keterangan'].map(h => (
+                  {['ID Transaksi', 'Kasir', 'Outlet', 'Tipe Koreksi', 'Nilai Lama', 'Nilai Baru', 'Waktu', 'Keterangan', 'Status', 'Aksi'].map(h => (
                     <th key={h} className="px-5 py-3.5 text-left text-xs font-semibold text-zinc-500 uppercase tracking-wide whitespace-nowrap">{h}</th>
                   ))}
                 </tr>
@@ -69,10 +80,10 @@ export default function AdminLogKoreksi() {
               <tbody className="divide-y divide-zinc-50">
                 {loading ? (
                   [...Array(4)].map((_, i) => (
-                    <tr key={i}><td colSpan={8} className="px-5 py-3"><div className="h-8 bg-zinc-100 rounded-lg animate-pulse" /></td></tr>
+                    <tr key={i}><td colSpan={10} className="px-5 py-3"><div className="h-8 bg-zinc-100 rounded-lg animate-pulse" /></td></tr>
                   ))
                 ) : filtered.length === 0 ? (
-                  <tr><td colSpan={8} className="px-5 py-16 text-center text-zinc-400 text-sm">Belum ada log koreksi</td></tr>
+                  <tr><td colSpan={10} className="px-5 py-16 text-center text-zinc-400 text-sm">Belum ada log koreksi</td></tr>
                 ) : filtered.map((l, i) => (
                   <tr key={i} className="hover:bg-zinc-50 transition-colors">
                     <td className="px-5 py-3.5 text-sm font-mono font-semibold text-zinc-900">{l.id_transaksi}</td>
@@ -85,6 +96,22 @@ export default function AdminLogKoreksi() {
                     <td className="px-5 py-3.5 text-sm text-green-600 font-semibold">{l.nilai_baru}</td>
                     <td className="px-5 py-3.5 text-sm text-zinc-500">{l.waktu}</td>
                     <td className="px-5 py-3.5 text-sm text-zinc-500 max-w-xs truncate">{l.keterangan}</td>
+                    <td className="px-5 py-3.5">
+                      <span className={`text-xs font-semibold px-2.5 py-1 rounded-full
+                        ${l.status === 'approved'
+                          ? 'bg-green-100 text-green-700'
+                          : 'bg-orange-100 text-orange-700'}`}>
+                        {l.status === 'approved' ? 'Disetujui' : 'Pending'}
+                      </span>
+                    </td>
+                    <td className="px-5 py-3.5 text-sm">
+                      {l.status === 'flagged' && (
+                        <button onClick={() => handleApprove(l.id)}
+                          className="bg-green-600 hover:bg-green-700 text-white font-semibold px-3 py-1.5 rounded-xl text-xs transition-colors">
+                          Setujui
+                        </button>
+                      )}
+                    </td>
                   </tr>
                 ))}
               </tbody>

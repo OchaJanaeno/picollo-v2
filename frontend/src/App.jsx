@@ -34,6 +34,9 @@ import AuditorVerifikasi from "./pages/auditor/Verifikasi";
 import AuditorPengawasan from "./pages/auditor/PengawasanKasir";
 import AuditorLogKoreksi from "./pages/auditor/LogKoreksi";
 
+// Profil (Global)
+import Profil from "./pages/Profil";
+
 // Guard
 function ProtectedRoute({ children, allowedRoles }) {
     const { user, token } = useAuthStore();
@@ -91,6 +94,9 @@ export default function App() {
                 <Route path="/auditor/verifikasi"  element={<AuditorRoute><AuditorVerifikasi /></AuditorRoute>} />
                 <Route path="/auditor/pengawasan"  element={<AuditorRoute><AuditorPengawasan /></AuditorRoute>} />
                 <Route path="/auditor/log-koreksi" element={<AuditorRoute><AuditorLogKoreksi /></AuditorRoute>} />
+
+                {/* ── Admin Profil ── */}
+                <Route path="/profil" element={<AdminRoute><Profil /></AdminRoute>} />
 
                 {/* Fallback */}
                 <Route path="*" element={<Navigate to="/" replace />} />

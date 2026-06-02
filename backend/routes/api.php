@@ -32,8 +32,14 @@ Route::middleware('auth:api')->group(function () {
 
     // Admin only
     Route::middleware('role:admin')->group(function () {
+        Route::post('/auth/profile',                        [AuthController::class, 'updateProfile']);
         Route::get('/dashboard/admin',                      [DashboardController::class, 'adminDashboard']);
         Route::apiResource('/outlets',                      OutletController::class);
+        
+        // Atur menu & stok outlet
+        Route::get('/outlets/{id}/products', [OutletController::class, 'getProducts']);
+        Route::post('/outlets/{id}/products', [OutletController::class, 'syncProducts']);
+
         Route::apiResource('/kasir',                        KasirController::class)->except(['index', 'show']);
         Route::apiResource('/auditors',                     AuditorController::class);
         Route::apiResource('/products',                     ProductController::class)->except(['index', 'show']);
