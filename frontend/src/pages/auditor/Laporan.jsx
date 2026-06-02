@@ -15,13 +15,32 @@ export default function AuditorLaporan() {
   const [period, setPeriod] = useState('bulanan')
 
   useEffect(() => { fetchData() }, [period])
+
+  const getDateRange = (p) => {
+    const end = new Date()
+    const start = new Date()
+    if (p === 'harian') start.setDate(end.getDate() - 7)
+    else if (p === 'bulanan') start.setMonth(end.getMonth() - 1)
+    else start.setFullYear(end.getFullYear() - 1)
+    return {
+      start_date: start.toISOString().split('T')[0],
+      end_date: end.toISOString().split('T')[0],
+    }
+  }
+
   const fetchData = async () => {
     setLoading(true)
     try {
-      // const res = await laporanService.getKeuangan({ period })
-      // setData(res.data.data)
+      const range = getDateRange(period)
+      const res = await laporanService.getKeuangan(range)
+      const d = res.data.data || {}
+      setData({
+        revenue: (d.per_hari || []).map(h => ({ label: h.tanggal, value: Number(h.total) || 0 })),
+      })
+    } catch (err) {
+      console.error('Fetch auditor laporan error:', err)
       setData({ revenue: [] })
-    } catch { setData({ revenue: [] }) }
+    }
     finally { setLoading(false) }
   }
 

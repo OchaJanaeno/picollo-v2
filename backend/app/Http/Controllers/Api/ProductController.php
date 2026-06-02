@@ -68,7 +68,7 @@ class ProductController extends Controller
             'satuan'     => 'nullable|string|max:255',
             'modal'      => 'nullable|numeric|min:0',
             'stok'       => 'nullable|integer|min:0',
-            'gambar_url' => 'nullable|url',
+            'gambar_url' => 'nullable|string',
         ], [
             'outlet_id.required' => 'Outlet wajib dipilih.',
             'outlet_id.in'       => 'Anda tidak memiliki akses ke outlet tersebut.',
@@ -86,6 +86,18 @@ class ProductController extends Controller
             ], 422);
         }
 
+        $gambarUrl = null;
+        if ($request->gambar_url && preg_match('/^data:image\/(\w+);base64,/', $request->gambar_url, $type)) {
+            $data = substr($request->gambar_url, strpos($request->gambar_url, ',') + 1);
+            $type = strtolower($type[1]);
+            $data = base64_decode($data);
+            $fileName = 'products/' . uniqid() . '.' . $type;
+            \Illuminate\Support\Facades\Storage::disk('public')->put($fileName, $data);
+            $gambarUrl = asset('storage/' . $fileName);
+        } else {
+            $gambarUrl = $request->gambar_url;
+        }
+
         $product = Product::create([
             'outlet_id'  => $request->outlet_id,
             'nama'       => $request->nama,
@@ -94,7 +106,7 @@ class ProductController extends Controller
             'satuan'     => $request->satuan ?? 'pcs',
             'modal'      => $request->modal,
             'stok'       => $request->stok ?? 0,
-            'gambar_url' => $request->gambar_url,
+            'gambar_url' => $gambarUrl,
             'is_active'  => true,
         ]);
 
@@ -126,7 +138,7 @@ class ProductController extends Controller
             'satuan'     => 'nullable|string|max:255',
             'modal'      => 'nullable|numeric|min:0',
             'stok'       => 'nullable|integer|min:0',
-            'gambar_url' => 'nullable|url',
+            'gambar_url' => 'nullable|string',
             'is_active'  => 'sometimes|boolean',
         ], [
             'nama.required'  => 'Nama produk wajib diisi.',
@@ -142,9 +154,22 @@ class ProductController extends Controller
             ], 422);
         }
 
-        $product->update($request->only(
-            'nama', 'kategori', 'harga', 'modal', 'satuan', 'stok', 'gambar_url', 'is_active'
-        ));
+        $dataToUpdate = $request->only('nama', 'kategori', 'harga', 'modal', 'satuan', 'stok', 'is_active');
+
+        if ($request->has('gambar_url')) {
+            if ($request->gambar_url && preg_match('/^data:image\/(\w+);base64,/', $request->gambar_url, $type)) {
+                $data = substr($request->gambar_url, strpos($request->gambar_url, ',') + 1);
+                $type = strtolower($type[1]);
+                $data = base64_decode($data);
+                $fileName = 'products/' . uniqid() . '.' . $type;
+                \Illuminate\Support\Facades\Storage::disk('public')->put($fileName, $data);
+                $dataToUpdate['gambar_url'] = asset('storage/' . $fileName);
+            } else {
+                $dataToUpdate['gambar_url'] = $request->gambar_url;
+            }
+        }
+
+        $product->update($dataToUpdate);
 
         return response()->json([
             'success' => true,

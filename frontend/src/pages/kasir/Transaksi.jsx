@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
 import Layout from '../../components/Layout'
 import useAuthStore from '../../store/authStore'
+import { productService } from '../../services/produkService'
+import { transaksiService } from '../../services/transaksiService'
 
 // ── Struk / Receipt ──
 function ModalStruk({ transaksi, onClose, onBaru }) {
@@ -113,7 +115,8 @@ function ModalStruk({ transaksi, onClose, onBaru }) {
 }
 
 // ── Modal Pembayaran ──
-function ModalPembayaran({ keranjang, total, kasirNama, onClose, onSuccess }) {
+function ModalPembayaran({ keranjang, total, user, kasirNama, onClose, onSuccess }) {
+  const { outlets } = useAuthStore()
   // metode hanya QRIS dan Tunai (Transfer dihapus)
   const [metode, setMetode] = useState('QRIS')
   const [uangDiterima, setUangDiterima] = useState('')
@@ -141,13 +144,33 @@ function ModalPembayaran({ keranjang, total, kasirNama, onClose, onSuccess }) {
 
     setLoading(true)
     try {
-      // TODO: const res = await transaksiService.create({ items: keranjang, metode, total })
-      await new Promise(r => setTimeout(r, 1200))
+      console.log("USER:", user);
+      console.log("KEYS:", Object.keys(user));
+      console.log("OUTLETS:", outlets)
+      const outletId = outlets?.[0]?.id
+      if (!outletId) {
+        alert('Anda tidak ditugaskan ke outlet manapun. Hubungi Admin.')
+        setLoading(false)
+        return
+      }
+
+      const payload = {
+        outlet_id: outletId,
+        metode_pembayaran: metode.toLowerCase(),
+        items: keranjang.map(item => ({
+          product_id: item.id,
+          qty: item.qty
+        })),
+        catatan: ''
+      }
+
+      const res = await transaksiService.create(payload)
+      const txData = res.data.data
 
       // Buat data struk
       setStruk({
-        id: 'TX-' + Date.now().toString().slice(-6),
-        waktu: new Date().toLocaleString('id-ID', {
+        id: txData.transaction_code,
+        waktu: new Date(txData.created_at).toLocaleString('id-ID', {
           day: 'numeric', month: 'long', year: 'numeric',
           hour: '2-digit', minute: '2-digit',
         }),
@@ -158,8 +181,9 @@ function ModalPembayaran({ keranjang, total, kasirNama, onClose, onSuccess }) {
         uangDiterima: uangNum,
         kembalian,
       })
-    } catch { }
-    finally { setLoading(false) }
+    } catch (err) {
+      alert(err.response?.data?.message || 'Gagal memproses pembayaran')
+    } finally { setLoading(false) }
   }
 
   // Kalau struk sudah ada → tampilkan struk
@@ -374,7 +398,7 @@ function ModalPembayaran({ keranjang, total, kasirNama, onClose, onSuccess }) {
 
 // ── Halaman Utama Kasir Transaksi ──
 export default function KasirTransaksi() {
-  const { user } = useAuthStore()
+  const { user, outlets } = useAuthStore()
   const [produkList, setProdukList] = useState([])
   const [keranjang, setKeranjang] = useState([])
   const [search, setSearch] = useState('')
@@ -386,9 +410,16 @@ export default function KasirTransaksi() {
 
   const fetchProduk = async () => {
     try {
-      // TODO: const res = await transaksiService.getProduk()
-      // setProdukList(res.data.data || [])
-      setProdukList([])
+      const res = await productService.getAll()
+      const mapped = (res.data.data || []).map(p => ({
+        id: p.id,
+        nama: p.nama,
+        kategori: p.kategori || 'Lainnya',
+        harga: p.harga,
+        foto: p.gambar_url || null,
+        stok: p.stok,
+      }))
+      setProdukList(mapped)
     } catch { setProdukList([]) }
   }
 
@@ -441,6 +472,7 @@ export default function KasirTransaksi() {
         <ModalPembayaran
           keranjang={keranjang}
           total={total}
+          user={user}
           kasirNama={user?.nama || user?.email || 'Kasir'}
           onClose={() => setShowBayar(false)}
           onSuccess={() => { setKeranjang([]); setShowBayar(false) }}

@@ -1,17 +1,19 @@
 import { useState, useEffect, useRef } from 'react'
 import Layout from '../../components/Layout'
 import { productService } from '../../services/produkService'
+import { outletService } from '../../services/outletService'
 import LoadingSpinner from '../../components/LoadingSpinner'
 import ErrorState from '../../components/ErrorState'
 
 // ── Modal Produk dengan Upload Foto ──
-function ModalProduk({ data, onClose, onSave }) {
+function ModalProduk({ data, outlets, onClose, onSave }) {
   const [form, setForm] = useState({
     nama: data?.nama || '',
     kategori: data?.kategori || '',
     harga: data?.harga || '',
     deskripsi: data?.deskripsi || '',
     status: data?.status || 'aktif',
+    outlet_id: data?.outlet_id || '',
   })
   const [foto, setFoto] = useState(data?.foto || null)
   const [fotoPreview, setFotoPreview] = useState(data?.foto || null)
@@ -52,21 +54,21 @@ function ModalProduk({ data, onClose, onSave }) {
     if (!form.nama) e.nama = 'Nama produk tidak boleh kosong'
     if (!form.harga) e.harga = 'Harga tidak boleh kosong'
     else if (isNaN(form.harga)) e.harga = 'Harga harus berupa angka'
+    if (!form.outlet_id) e.outlet_id = 'Pilih outlet untuk produk ini'
     if (Object.keys(e).length) { setErrors(e); return }
     setLoading(true)
     try {
-      // Uncomment saat backend siap:
-      // const formData = new FormData()
-      // Object.entries(form).forEach(([k, v]) => formData.append(k, v))
-      // if (foto instanceof File) formData.append('foto', foto)
-      // if (data) await produkService.update(data.id, formData)
-      // else await produkService.create(formData)
-      onSave(data
-        ? { ...data, ...form, foto: fotoPreview }
-        : { ...form, foto: fotoPreview }
-      )
-    } catch {
-      setErrors({ global: 'Gagal menyimpan produk' })
+      await onSave({
+        nama: form.nama,
+        kategori: form.kategori,
+        harga: parseFloat(form.harga),
+        outlet_id: parseInt(form.outlet_id),
+        is_active: form.status === 'aktif',
+        deskripsi: form.deskripsi,
+        foto: fotoPreview,
+      })
+    } catch (err) {
+      setErrors({ global: err.response?.data?.message || 'Gagal menyimpan produk' })
     } finally { setLoading(false) }
   }
 
@@ -196,6 +198,19 @@ function ModalProduk({ data, onClose, onSave }) {
             </div>
           </div>
 
+          {/* ── Outlet Assignment ── */}
+          <div>
+            <label className="text-zinc-700 text-sm font-semibold mb-1.5 block">Assign ke Outlet</label>
+            <select value={form.outlet_id} onChange={e => set('outlet_id', e.target.value)}
+              className={inputCls('outlet_id') + ' bg-white'}>
+              <option value="">-- Pilih Outlet --</option>
+              {outlets && outlets.map(o => (
+                <option key={o.id} value={o.id}>{o.nama}</option>
+              ))}
+            </select>
+            {errors.outlet_id && <p className="text-xs text-red-500 mt-1">{errors.outlet_id}</p>}
+          </div>
+
           {/* ── Deskripsi ── */}
           <div>
             <label className="text-zinc-700 text-sm font-semibold mb-1.5 block">
@@ -254,6 +269,7 @@ function ModalProduk({ data, onClose, onSave }) {
 
 export default function AdminProduk() {
   const [produk, setProduk] = useState([])
+  const [outlets, setOutlets] = useState([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [filterKategori, setFilterKategori] = useState('semua')
@@ -266,16 +282,36 @@ export default function AdminProduk() {
   const fetchData = async () => {
     setLoading(true)
     try {
-      // const res = await produkService.getAll()
-      // setProduk(res.data.data || [])
-      setProduk([])
-    } catch { setProduk([]) }
-    finally { setLoading(false) }
+      const outletRes = await outletService.getAll()
+      setOutlets(outletRes.data.data || [])
+
+      const res = await productService.getAll()
+      const mapped = (res.data.data || []).map(p => ({
+        id: p.id,
+        nama: p.nama,
+        kategori: p.kategori,
+        harga: p.harga,
+        deskripsi: p.deskripsi || '',
+        status: p.is_active ? 'aktif' : 'nonaktif',
+        outlet_id: p.outlet_id,
+        outlet: p.outlet?.nama || '-',
+        foto: p.gambar_url || null,
+      }))
+      setProduk(mapped)
+    } catch { 
+      setProduk([]) 
+      setOutlets([])
+    } finally { setLoading(false) }
   }
 
-  const handleDelete = (id) => {
-    setProduk(prev => prev.filter(p => p.id !== id))
-    setDeleteConfirm(null)
+  const handleDelete = async (id) => {
+    try {
+      await productService.delete(id)
+      setProduk(prev => prev.filter(p => p.id !== id))
+      setDeleteConfirm(null)
+    } catch {
+      alert('Gagal menghapus produk')
+    }
   }
 
   const kategoriList = ['semua', ...new Set(produk.map(p => p.kategori).filter(Boolean))]
@@ -292,12 +328,46 @@ export default function AdminProduk() {
       {showModal && (
         <ModalProduk
           data={editData}
+          outlets={outlets}
           onClose={() => { setShowModal(false); setEditData(null) }}
-          onSave={(item) => {
+          onSave={async (item) => {
+            const payload = {
+              nama: item.nama,
+              kategori: item.kategori,
+              harga: item.harga,
+              outlet_id: item.outlet_id,
+              is_active: item.is_active,
+              deskripsi: item.deskripsi,
+              gambar_url: item.foto, // save the foto preview/url
+            }
             if (editData) {
-              setProduk(prev => prev.map(p => p.id === editData.id ? { ...editData, ...item } : p))
+              const res = await productService.update(editData.id, payload)
+              const updated = {
+                id: res.data.data.id,
+                nama: res.data.data.nama,
+                kategori: res.data.data.kategori,
+                harga: res.data.data.harga,
+                deskripsi: res.data.data.deskripsi || '',
+                status: res.data.data.is_active ? 'aktif' : 'nonaktif',
+                outlet_id: res.data.data.outlet_id,
+                outlet: res.data.data.outlet?.nama || outlets.find(o => o.id == res.data.data.outlet_id)?.nama || '-',
+                foto: res.data.data.gambar_url || null,
+              }
+              setProduk(prev => prev.map(p => p.id === editData.id ? updated : p))
             } else {
-              setProduk(prev => [...prev, { ...item, id: Date.now(), status: item.status || 'aktif' }])
+              const res = await productService.create(payload)
+              const created = {
+                id: res.data.data.id,
+                nama: res.data.data.nama,
+                kategori: res.data.data.kategori,
+                harga: res.data.data.harga,
+                deskripsi: res.data.data.deskripsi || '',
+                status: res.data.data.is_active ? 'aktif' : 'nonaktif',
+                outlet_id: res.data.data.outlet_id,
+                outlet: res.data.data.outlet?.nama || outlets.find(o => o.id == res.data.data.outlet_id)?.nama || '-',
+                foto: res.data.data.gambar_url || null,
+              }
+              setProduk(prev => [...prev, created])
             }
             setShowModal(false)
             setEditData(null)

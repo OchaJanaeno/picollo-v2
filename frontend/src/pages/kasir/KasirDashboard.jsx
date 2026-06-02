@@ -1,6 +1,11 @@
 import { useState, useEffect } from 'react'
 import Layout from '../../components/Layout'
-import { rekapService } from '../../services/rekapService'
+import { transaksiService } from '../../services/transaksiService'
+
+const formatRupiah = (num) => {
+  if (!num && num !== 0) return '-'
+  return `Rp ${Number(num).toLocaleString('id-ID')}`
+}
 
 export default function KasirDashboard() {
   const [stats, setStats] = useState(null)
@@ -12,11 +17,36 @@ export default function KasirDashboard() {
   const fetchData = async () => {
     setLoading(true)
     try {
-      // const res = await rekapService.getHarian()
-      // setStats(res.data.stats)
-      // setRecentTx(res.data.transactions || [])
+      const res = await transaksiService.getAll()
+      const allTx = res.data.data?.data || res.data.data || []
+      
+      // Filter transaksi hari ini
+      const today = new Date().toISOString().split('T')[0]
+      const todayTx = allTx.filter(tx => tx.created_at?.startsWith(today))
+      
+      const totalOmzet = todayTx.reduce((sum, tx) => sum + (Number(tx.total_amount) || 0), 0)
+      const qrisCount = todayTx.filter(tx => tx.metode_pembayaran === 'qris').length
+      const tunaiCount = todayTx.filter(tx => tx.metode_pembayaran === 'tunai').length
+      
+      setStats({
+        total_transaksi: todayTx.length,
+        total_omzet: formatRupiah(totalOmzet),
+        total_qris: qrisCount,
+        total_tunai: tunaiCount,
+      })
+      
+      // Recent transactions (max 5)
+      const recent = allTx.slice(0, 5).map(tx => ({
+        id: tx.transaction_code || tx.id,
+        metode: tx.metode_pembayaran === 'qris' ? 'QRIS' : 'Tunai',
+        waktu: tx.created_at ? new Date(tx.created_at).toLocaleString('id-ID', { hour: '2-digit', minute: '2-digit' }) : '-',
+        total: formatRupiah(tx.total_amount),
+      }))
+      setRecentTx(recent)
+    } catch (err) {
+      console.error('Fetch kasir dashboard error:', err)
       setStats(null); setRecentTx([])
-    } catch { setStats(null); setRecentTx([]) }
+    }
     finally { setLoading(false) }
   }
 

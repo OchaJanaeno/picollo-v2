@@ -1,7 +1,7 @@
 import api from './api'
 
 export const transaksiService = {
-  getAll: () => api.get('/transactions'),
+  getAll: (params) => api.get('/transactions', { params }),
   getById: (id) => api.get(`/transactions/${id}`),
   create: (data) => api.post('/transactions', data),
   update: (id, data) => api.put(`/transactions/${id}`, data),

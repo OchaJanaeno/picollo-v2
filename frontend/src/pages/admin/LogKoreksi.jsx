@@ -12,10 +12,24 @@ export default function AdminLogKoreksi() {
   const fetchData = async () => {
     setLoading(true)
     try {
-      // const res = await logKoreksiService.getAll()
-      // setData(res.data.data || [])
+      const res = await logKoreksiService.getAll()
+      const raw = res.data.data?.data || res.data.data || []
+      const mapped = raw.map(l => ({
+        id_transaksi: l.transaction?.transaction_code || '-',
+        kasir: l.corrected_by?.name || l.correctedBy?.name || '-',
+        outlet: l.outlet?.nama || '-',
+        tipe: l.correction_type || '-',
+        nilai_lama: l.hash_sebelum ? l.hash_sebelum.substring(0, 12) + '...' : '-',
+        nilai_baru: l.hash_sesudah ? l.hash_sesudah.substring(0, 12) + '...' : '-',
+        waktu: l.created_at ? new Date(l.created_at).toLocaleString('id-ID', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-',
+        keterangan: l.alasan || '-',
+        status: l.status,
+      }))
+      setData(mapped)
+    } catch (err) {
+      console.error('Fetch log koreksi error:', err)
       setData([])
-    } catch { setData([]) }
+    }
     finally { setLoading(false) }
   }
 

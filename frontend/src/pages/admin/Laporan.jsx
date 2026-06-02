@@ -20,29 +20,56 @@ export default function AdminLaporan() {
   const [period, setPeriod] = useState('bulanan')
   const [exportLoading, setExportLoading] = useState(false)
 
+  const getDateRange = (p) => {
+    const end = new Date()
+    const start = new Date()
+    if (p === 'harian') start.setDate(end.getDate() - 7)
+    else if (p === 'bulanan') start.setMonth(end.getMonth() - 1)
+    else start.setFullYear(end.getFullYear() - 1)
+    return {
+      start_date: start.toISOString().split('T')[0],
+      end_date: end.toISOString().split('T')[0],
+    }
+  }
+
   useEffect(() => { fetchData() }, [period])
 
   const fetchData = async () => {
     setLoading(true)
     try {
-      // const res = await laporanService.getKeuangan({ period })
-      // setData(res.data.data)
+      const range = getDateRange(period)
+      const res = await laporanService.getKeuangan(range)
+      const d = res.data.data || {}
+      setData({
+        revenue: (d.per_hari || []).map(h => ({ label: h.tanggal, value: Number(h.total) || 0 })),
+        byOutlet: (d.per_outlet || []).map(o => ({ nama: o.outlet_nama || '-', omzet: Number(o.total) || 0 })),
+        byProduct: [],
+        ringkasan: d.ringkasan || {},
+      })
+    } catch (err) {
+      console.error('Fetch laporan error:', err)
       setData({ revenue: [], byOutlet: [], byProduct: [] })
-    } catch { setData({ revenue: [], byOutlet: [], byProduct: [] }) }
+    }
     finally { setLoading(false) }
   }
 
   const handleExport = async (type) => {
     setExportLoading(true)
     try {
-      // const res = type === 'pdf'
-      //   ? await laporanService.exportPdf({ period })
-      //   : await laporanService.exportExcel({ period })
-      // const url = URL.createObjectURL(new Blob([res.data]))
-      // const a = document.createElement('a'); a.href = url
-      // a.download = `laporan-${period}.${type}`; a.click()
-      alert('Export akan tersedia setelah backend terhubung')
-    } catch { alert('Export gagal') }
+      const range = getDateRange(period)
+      if (type === 'pdf') {
+        const res = await laporanService.exportPdf(range)
+        const url = URL.createObjectURL(new Blob([res.data]))
+        const a = document.createElement('a'); a.href = url
+        a.download = `laporan-${range.start_date}-ke-${range.end_date}.pdf`; a.click()
+        URL.revokeObjectURL(url)
+      } else {
+        alert('Export Excel belum tersedia di backend')
+      }
+    } catch (err) {
+      console.error('Export error:', err)
+      alert('Export gagal: ' + (err.response?.data?.message || err.message))
+    }
     finally { setExportLoading(false) }
   }
 

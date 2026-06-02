@@ -1,6 +1,12 @@
 import { useState, useEffect } from 'react'
 import Layout from '../../components/Layout'
 import { kasirService } from '../../services/kasirService'
+import { transaksiService } from '../../services/transaksiService'
+
+const formatRupiah = (num) => {
+  if (!num && num !== 0) return '-'
+  return `Rp ${Number(num).toLocaleString('id-ID')}`
+}
 
 export default function AdminPengawasanKasir() {
   const [data, setData] = useState([])
@@ -15,10 +21,20 @@ export default function AdminPengawasanKasir() {
   const fetchData = async () => {
     setLoading(true)
     try {
-      // const res = await kasirService.getAll()
-      // setData(res.data.data || [])
+      const res = await kasirService.getAll()
+      const raw = res.data.data || []
+      const mapped = raw.map(k => ({
+        id: k.id,
+        nama: k.name || k.nama,
+        outlet: k.outlets?.[0]?.nama || '-',
+        total_transaksi: '-',
+        status: k.is_active ? 'aktif' : 'nonaktif',
+      }))
+      setData(mapped)
+    } catch (err) {
+      console.error('Fetch kasir error:', err)
       setData([])
-    } catch { setData([]) }
+    }
     finally { setLoading(false) }
   }
 
@@ -27,10 +43,22 @@ export default function AdminPengawasanKasir() {
     setLoadingActivity(true)
     setActivities([])
     try {
-      // const res = await kasirService.getActivity(kasir.id)
-      // setActivities(res.data.data || [])
+      const res = await transaksiService.getAll()
+      const allTx = res.data.data?.data || res.data.data || []
+      // Filter transaksi milik kasir ini
+      const kasirTx = allTx.filter(tx => tx.user_id === kasir.id || tx.kasir?.id === kasir.id)
+      const mapped = kasirTx.map(tx => ({
+        id_transaksi: tx.transaction_code || tx.id,
+        metode: tx.metode_pembayaran === 'qris' ? 'QRIS' : tx.metode_pembayaran === 'transfer' ? 'TF' : 'Tunai',
+        waktu: tx.created_at ? new Date(tx.created_at).toLocaleString('id-ID', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: 'short' }) : '-',
+        total: formatRupiah(tx.total_amount),
+        status: tx.hash_verification?.status || (tx.status === 'success' ? 'verified' : tx.status || 'pending'),
+      }))
+      setActivities(mapped)
+    } catch (err) {
+      console.error('Fetch activity error:', err)
       setActivities([])
-    } catch { setActivities([]) }
+    }
     finally { setLoadingActivity(false) }
   }
 

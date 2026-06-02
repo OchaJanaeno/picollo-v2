@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react'
 import Layout from '../../components/Layout'
+import { kasirService } from '../../services/kasirService'
+import { transaksiService } from '../../services/transaksiService'
 
 export default function AuditorPengawasanKasir() {
   const [data, setData] = useState([])
@@ -8,6 +10,40 @@ export default function AuditorPengawasanKasir() {
   const [filterOutlet, setFilterOutlet] = useState('semua')
 
   useEffect(() => { fetchData() }, [])
+
+  const fetchData = async () => {
+    setLoading(true)
+    try {
+      const kasirRes = await kasirService.getAll()
+      let txs = []
+      try {
+        const txRes = await transaksiService.getAll({ all: true })
+        txs = txRes.data.data?.data || txRes.data.data || []
+      } catch {
+        txs = []
+      }
+
+      const mapped = (kasirRes.data.data || []).map(k => {
+        const kasirTx = txs.filter(t => t.user_id === k.id)
+        const omzet = kasirTx.reduce((sum, t) => sum + parseFloat(t.total_amount || 0), 0)
+        return {
+          id: k.id,
+          nama: k.name,
+          outlet: k.outlets?.[0]?.nama || '-',
+          status: k.is_active ? 'online' : 'offline',
+          transaksiHariIni: kasirTx.length,
+          omzetHariIni: omzet,
+          loginTerakhir: k.last_login_at ? new Date(k.last_login_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ' WIB' : 'Belum login',
+          aktivitasTerakhir: kasirTx.length > 0 ? 'Input Transaksi' : 'Belum ada aktivitas',
+        }
+      })
+      setData(mapped)
+    } catch {
+      setData([])
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const outletList = ['semua', ...new Set(data.map(d => d.outlet))]
 
