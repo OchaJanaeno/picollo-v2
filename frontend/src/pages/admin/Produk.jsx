@@ -13,7 +13,6 @@ function ModalProduk({ data, outlets, onClose, onSave }) {
     harga: data?.harga || '',
     deskripsi: data?.deskripsi || '',
     status: data?.status || 'aktif',
-    outlet_id: data?.outlet_id || '',
   })
   const [foto, setFoto] = useState(data?.foto || null)
   const [fotoPreview, setFotoPreview] = useState(data?.foto || null)
@@ -54,7 +53,6 @@ function ModalProduk({ data, outlets, onClose, onSave }) {
     if (!form.nama) e.nama = 'Nama produk tidak boleh kosong'
     if (!form.harga) e.harga = 'Harga tidak boleh kosong'
     else if (isNaN(form.harga)) e.harga = 'Harga harus berupa angka'
-    if (!form.outlet_id) e.outlet_id = 'Pilih outlet untuk produk ini'
     if (Object.keys(e).length) { setErrors(e); return }
     setLoading(true)
     try {
@@ -62,7 +60,6 @@ function ModalProduk({ data, outlets, onClose, onSave }) {
         nama: form.nama,
         kategori: form.kategori,
         harga: parseFloat(form.harga),
-        outlet_id: parseInt(form.outlet_id),
         is_active: form.status === 'aktif',
         deskripsi: form.deskripsi,
         foto: fotoPreview,
@@ -198,18 +195,7 @@ function ModalProduk({ data, outlets, onClose, onSave }) {
             </div>
           </div>
 
-          {/* ── Outlet Assignment ── */}
-          <div>
-            <label className="text-zinc-700 text-sm font-semibold mb-1.5 block">Assign ke Outlet</label>
-            <select value={form.outlet_id} onChange={e => set('outlet_id', e.target.value)}
-              className={inputCls('outlet_id') + ' bg-white'}>
-              <option value="">-- Pilih Outlet --</option>
-              {outlets && outlets.map(o => (
-                <option key={o.id} value={o.id}>{o.nama}</option>
-              ))}
-            </select>
-            {errors.outlet_id && <p className="text-xs text-red-500 mt-1">{errors.outlet_id}</p>}
-          </div>
+
 
           {/* ── Deskripsi ── */}
           <div>
@@ -293,8 +279,6 @@ export default function AdminProduk() {
         harga: p.harga,
         deskripsi: p.deskripsi || '',
         status: p.is_active ? 'aktif' : 'nonaktif',
-        outlet_id: p.outlet_id,
-        outlet: p.outlet?.nama || '-',
         foto: p.gambar_url || null,
       }))
       setProduk(mapped)
@@ -335,7 +319,6 @@ export default function AdminProduk() {
               nama: item.nama,
               kategori: item.kategori,
               harga: item.harga,
-              outlet_id: item.outlet_id,
               is_active: item.is_active,
               deskripsi: item.deskripsi,
               gambar_url: item.foto, // save the foto preview/url
@@ -349,8 +332,7 @@ export default function AdminProduk() {
                 harga: res.data.data.harga,
                 deskripsi: res.data.data.deskripsi || '',
                 status: res.data.data.is_active ? 'aktif' : 'nonaktif',
-                outlet_id: res.data.data.outlet_id,
-                outlet: res.data.data.outlet?.nama || outlets.find(o => o.id == res.data.data.outlet_id)?.nama || '-',
+                outlets: res.data.data.outlets || [],
                 foto: res.data.data.gambar_url || null,
               }
               setProduk(prev => prev.map(p => p.id === editData.id ? updated : p))
@@ -363,8 +345,7 @@ export default function AdminProduk() {
                 harga: res.data.data.harga,
                 deskripsi: res.data.data.deskripsi || '',
                 status: res.data.data.is_active ? 'aktif' : 'nonaktif',
-                outlet_id: res.data.data.outlet_id,
-                outlet: res.data.data.outlet?.nama || outlets.find(o => o.id == res.data.data.outlet_id)?.nama || '-',
+                outlets: res.data.data.outlets || [],
                 foto: res.data.data.gambar_url || null,
               }
               setProduk(prev => [...prev, created])
@@ -407,9 +388,9 @@ export default function AdminProduk() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
-            <h2 className="text-xl sm:text-2xl font-bold text-zinc-900">Manajemen Produk</h2>
+            <h2 className="text-xl sm:text-2xl font-bold text-zinc-900">Master Katalog Produk</h2>
             <p className="text-zinc-500 text-sm mt-0.5">
-              Kelola produk yang tersedia di semua outlet
+              Kelola daftar semua produk. Untuk mengaktifkan dan mengatur stok, pergi ke menu Manajemen Outlet.
             </p>
           </div>
           <button onClick={() => { setEditData(null); setShowModal(true) }}

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import Layout from '../../components/Layout'
 import { rekapService } from '../../services/rekapService'
 import { transaksiService } from '../../services/transaksiService'
+import { logKoreksiService } from '../../services/logKoreksiService'
 import useAuthStore from '../../store/authStore'
 
 const formatRupiah = (num) => {
@@ -9,11 +10,108 @@ const formatRupiah = (num) => {
   return `Rp ${Number(num).toLocaleString('id-ID')}`
 }
 
+// ── Modal Koreksi ──
+function ModalKoreksi({ transaksi, onClose, onSuccess }) {
+  const [alasan, setAlasan] = useState('')
+  const [metode, setMetode] = useState(transaksi.raw_metode || 'qris')
+  const [catatan, setCatatan] = useState(transaksi.raw_catatan || '')
+  const [ref, setRef] = useState(transaksi.raw_reference || '')
+  const [loading, setLoading] = useState(false)
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    if (!alasan) {
+      alert('Alasan koreksi harus diisi')
+      return
+    }
+    setLoading(true)
+    try {
+      const payload = {
+        transaction_id: transaksi.db_id,
+        alasan,
+        correction_type: 'edit',
+        new_data: {
+          metode_pembayaran: metode,
+          catatan,
+          payment_reference: ref,
+        }
+      }
+      await logKoreksiService.create(payload)
+      alert('Permohonan koreksi berhasil diajukan.')
+      onSuccess()
+    } catch (err) {
+      alert('Gagal mengajukan koreksi: ' + (err.response?.data?.message || err.message))
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+      <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl overflow-hidden">
+        <div className="px-6 py-5 border-b border-zinc-100 flex items-center justify-between bg-zinc-50/50">
+          <div>
+            <h3 className="font-bold text-zinc-900 text-lg">Koreksi Data Transaksi</h3>
+            <p className="text-zinc-500 text-xs mt-0.5 font-mono">No. TRX: {transaksi.id}</p>
+          </div>
+          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full bg-zinc-200/50 text-zinc-500 hover:bg-zinc-200 hover:text-zinc-700 transition-colors">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="p-6 space-y-5">
+          <div className="space-y-4">
+            <div>
+              <label className="block text-zinc-700 text-xs font-bold mb-1.5 uppercase tracking-wide">Metode Pembayaran</label>
+              <select value={metode} onChange={e => setMetode(e.target.value)}
+                className="w-full border border-zinc-200 bg-zinc-50/50 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-red-800 focus:bg-white transition-all appearance-none cursor-pointer">
+                <option value="qris">QRIS</option>
+                <option value="tunai">Tunai</option>
+                <option value="transfer">Transfer</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-zinc-700 text-xs font-bold mb-1.5 uppercase tracking-wide">Ref Pembayaran <span className="text-zinc-400 font-normal">(Opsional)</span></label>
+              <input type="text" value={ref} onChange={e => setRef(e.target.value)}
+                className="w-full border border-zinc-200 bg-zinc-50/50 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-red-800 focus:bg-white transition-all"
+                placeholder="Contoh: REF-12345" />
+            </div>
+            <div>
+              <label className="block text-zinc-700 text-xs font-bold mb-1.5 uppercase tracking-wide">Catatan <span className="text-zinc-400 font-normal">(Opsional)</span></label>
+              <input type="text" value={catatan} onChange={e => setCatatan(e.target.value)}
+                className="w-full border border-zinc-200 bg-zinc-50/50 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-red-800 focus:bg-white transition-all"
+                placeholder="Contoh: Salah pilih metode" />
+            </div>
+            <div>
+              <label className="block text-zinc-700 text-xs font-bold mb-1.5 uppercase tracking-wide">Alasan Koreksi <span className="text-red-500">*</span></label>
+              <textarea value={alasan} onChange={e => setAlasan(e.target.value)}
+                className="w-full border border-zinc-200 bg-zinc-50/50 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-red-800 focus:bg-white transition-all min-h-[100px] resize-none"
+                placeholder="Jelaskan secara detail alasan melakukan koreksi..." required />
+            </div>
+          </div>
+
+          <div className="flex gap-3 pt-2">
+            <button type="button" onClick={onClose} disabled={loading}
+              className="flex-1 bg-zinc-100 text-zinc-700 font-bold py-3.5 rounded-xl text-sm hover:bg-zinc-200 transition-colors">
+              Batal
+            </button>
+            <button type="submit" disabled={loading}
+              className="flex-1 bg-red-800 hover:bg-red-900 disabled:bg-zinc-300 disabled:text-zinc-500 text-white font-bold py-3.5 rounded-xl text-sm transition-colors shadow-lg shadow-red-900/20">
+              {loading ? 'Mengirim...' : 'Kirim Pengajuan'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
+
 export default function KasirRekapHarian() {
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [sending, setSending] = useState(false)
   const [sent, setSent] = useState(false)
+  const [selectedKoreksi, setSelectedKoreksi] = useState(null)
   const { user, outlets } = useAuthStore()
 
   useEffect(() => { fetchData() }, [])
@@ -41,6 +139,7 @@ export default function KasirRekapHarian() {
         total_qris: formatRupiah(totalQris),
         total_tunai: formatRupiah(totalTunai),
         transaksi: todayTx.map(tx => ({
+          db_id: tx.id,
           id: tx.transaction_code || tx.id,
           produk: tx.items?.map(i => i.nama_produk).join(', ') || '-',
           qty: tx.items?.reduce((s, i) => s + (i.qty || 0), 0) || 0,
@@ -48,6 +147,10 @@ export default function KasirRekapHarian() {
           metode: tx.metode_pembayaran === 'qris' ? 'QRIS' : tx.metode_pembayaran === 'transfer' ? 'Transfer' : 'Tunai',
           waktu: tx.created_at ? new Date(tx.created_at).toLocaleString('id-ID', { hour: '2-digit', minute: '2-digit' }) : '-',
           status: tx.hash_verification?.status || (tx.status === 'success' ? 'verified' : tx.status || 'pending'),
+          raw_metode: tx.metode_pembayaran,
+          raw_catatan: tx.catatan,
+          raw_reference: tx.payment_reference,
+          raw_items: tx.items || [],
         })),
       })
     } catch (err) {
@@ -76,74 +179,113 @@ export default function KasirRekapHarian() {
 
   return (
     <Layout>
-      <div className="space-y-6 max-w-3xl">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+      <div className="space-y-8 max-w-5xl mx-auto">
+        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
           <div>
-            <h2 className="text-xl sm:text-2xl font-bold text-zinc-900">Rekap Harian</h2>
-            <p className="text-zinc-500 text-sm mt-0.5">Rekap transaksi hari ini</p>
+            <h2 className="text-2xl sm:text-3xl font-extrabold text-zinc-900 tracking-tight">Rekap Harian</h2>
+            <p className="text-zinc-500 text-sm mt-1">Laporan transaksi hari ini untuk disetorkan ke Admin.</p>
           </div>
           <button onClick={handleKirim} disabled={sending || sent || !data}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-colors
-              ${sent ? 'bg-green-600 text-white' : 'bg-red-800 hover:bg-red-900 disabled:bg-zinc-300 text-white'}`}>
-            {sent ? '✓ Terkirim ke Admin' : sending ? 'Mengirim...' : 'Kirim ke Admin'}
+            className={`flex items-center gap-2 px-6 py-3 rounded-2xl text-sm font-bold transition-all shadow-xl
+              ${sent ? 'bg-green-500 text-white shadow-green-500/20' : 'bg-red-800 hover:bg-red-900 shadow-red-900/20 disabled:bg-zinc-200 disabled:text-zinc-400 disabled:shadow-none text-white'}`}>
+            {sent ? (
+              <>
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" /></svg>
+                Terkirim ke Admin
+              </>
+            ) : sending ? 'Mengirim...' : (
+              <>
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" /></svg>
+                Kirim Laporan
+              </>
+            )}
           </button>
         </div>
 
         {/* Stats */}
         {loading ? (
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            {[...Array(4)].map((_, i) => <div key={i} className="bg-zinc-200 rounded-2xl h-24 animate-pulse" />)}
+          <div className="grid grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4">
+            {[...Array(4)].map((_, i) => <div key={i} className="bg-zinc-200 rounded-2xl h-32 animate-pulse" />)}
           </div>
         ) : !data ? (
-          <div className="bg-white rounded-2xl border border-zinc-200 p-12 text-center text-zinc-400 text-sm">
-            Belum ada data rekap. Data akan muncul setelah backend terhubung.
+          <div className="bg-white rounded-3xl border border-zinc-100 shadow-sm p-16 text-center text-zinc-400">
+            <svg className="w-12 h-12 mx-auto mb-4 text-zinc-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+            <p className="text-sm">Belum ada data rekap. Transaksi hari ini akan muncul di sini.</p>
           </div>
         ) : (
           <>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4">
               {[
-                { label: 'Total Transaksi', val: data.total_transaksi, color: 'bg-zinc-900' },
-                { label: 'Total Omzet',     val: data.total_omzet,     color: 'bg-red-800' },
+                { label: 'Total Transaksi', val: data.total_transaksi, color: 'bg-red-800' },
+                { label: 'Total Omzet',     val: data.total_omzet,     color: 'bg-zinc-800' },
                 { label: 'QRIS',            val: data.total_qris,      color: 'bg-zinc-700' },
                 { label: 'Tunai',           val: data.total_tunai,     color: 'bg-zinc-600' },
-              ].map(s => (
-                <div key={s.label} className={`${s.color} rounded-2xl px-4 py-4 text-white`}>
-                  <p className="text-white/70 text-xs mb-1">{s.label}</p>
-                  <p className="text-xl font-bold">{s.val}</p>
+              ].map((s, i) => (
+                <div key={i} className={`${s.color} rounded-2xl p-4 sm:p-5 text-white`}>
+                  <p className="text-white/70 text-xs sm:text-sm font-medium mb-3">{s.label}</p>
+                  <p className="text-xl sm:text-2xl font-bold">{s.val}</p>
                 </div>
               ))}
             </div>
 
             {/* Tabel transaksi hari ini */}
-            <div className="bg-white rounded-2xl border border-zinc-200 overflow-hidden">
-              <div className="px-5 py-4 border-b border-zinc-100">
-                <h3 className="font-bold text-zinc-900 text-sm">Detail Transaksi</h3>
+            <div className="bg-white rounded-3xl border border-zinc-100 shadow-sm overflow-hidden flex flex-col">
+              <div className="px-6 py-5 border-b border-zinc-100 flex items-center justify-between bg-zinc-50/50">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-xl bg-red-100 flex items-center justify-center">
+                    <svg className="w-4 h-4 text-red-800" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" /></svg>
+                  </div>
+                  <h3 className="font-bold text-zinc-900">Rincian Transaksi</h3>
+                </div>
               </div>
               <div className="overflow-x-auto">
-                <table className="w-full">
+                <table className="w-full text-left border-collapse">
                   <thead>
-                    <tr className="border-b border-zinc-100">
-                      {['ID', 'Produk', 'Qty', 'Total', 'Metode', 'Waktu', 'Status'].map(h => (
-                        <th key={h} className="px-5 py-3 text-left text-xs font-semibold text-zinc-500 uppercase tracking-wide whitespace-nowrap">{h}</th>
+                    <tr className="bg-white border-b border-zinc-100">
+                      {['ID / Waktu', 'Produk', 'Total', 'Metode', 'Status', 'Aksi'].map(h => (
+                        <th key={h} className="px-6 py-4 text-xs font-bold text-zinc-400 uppercase tracking-wider">{h}</th>
                       ))}
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-zinc-50">
+                  <tbody className="divide-y divide-zinc-50/80">
                     {(data.transaksi || []).length === 0 ? (
-                      <tr><td colSpan={7} className="px-5 py-12 text-center text-zinc-400 text-sm">Belum ada transaksi</td></tr>
+                      <tr><td colSpan={6} className="px-6 py-16 text-center text-zinc-400 text-sm font-medium">Belum ada transaksi hari ini</td></tr>
                     ) : (data.transaksi || []).map(tx => (
-                      <tr key={tx.id} className="hover:bg-zinc-50 transition-colors">
-                        <td className="px-5 py-3 text-xs font-mono font-semibold text-zinc-900">{tx.id}</td>
-                        <td className="px-5 py-3 text-sm text-zinc-700">{tx.produk}</td>
-                        <td className="px-5 py-3 text-sm text-zinc-700">{tx.qty}</td>
-                        <td className="px-5 py-3 text-sm font-semibold text-zinc-900">{tx.total}</td>
-                        <td className="px-5 py-3"><span className="text-xs bg-zinc-100 text-zinc-700 font-semibold px-2.5 py-1 rounded-full">{tx.metode}</span></td>
-                        <td className="px-5 py-3 text-sm text-zinc-500">{tx.waktu}</td>
-                        <td className="px-5 py-3">
-                          <span className={`text-xs font-semibold px-2.5 py-1 rounded-full
-                            ${tx.status === 'verified' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
-                            {tx.status}
+                      <tr key={tx.id} className="hover:bg-zinc-50/80 transition-colors group">
+                        <td className="px-6 py-4">
+                          <p className="text-sm font-bold font-mono text-zinc-900 group-hover:text-red-800 transition-colors">{tx.id}</p>
+                          <p className="text-xs text-zinc-500 mt-0.5">{tx.waktu}</p>
+                        </td>
+                        <td className="px-6 py-4">
+                          <p className="text-sm font-semibold text-zinc-800 line-clamp-1">{tx.produk}</p>
+                          <p className="text-xs text-zinc-500 mt-0.5">{tx.qty} item</p>
+                        </td>
+                        <td className="px-6 py-4">
+                          <p className="text-sm font-extrabold text-zinc-900">{tx.total}</p>
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold
+                            ${tx.metode === 'QRIS' ? 'bg-blue-50 text-blue-700' : tx.metode === 'Tunai' ? 'bg-emerald-50 text-emerald-700' : 'bg-purple-50 text-purple-700'}`}>
+                            {tx.metode}
                           </span>
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold
+                            ${tx.status === 'verified' ? 'bg-green-50 text-green-700' : tx.status === 'voided' ? 'bg-zinc-100 text-zinc-500' : 'bg-orange-50 text-orange-700'}`}>
+                            {tx.status === 'verified' && <div className="w-1.5 h-1.5 rounded-full bg-green-500" />}
+                            {tx.status === 'pending' && <div className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse" />}
+                            {tx.status === 'voided' && <div className="w-1.5 h-1.5 rounded-full bg-zinc-400" />}
+                            <span className="capitalize">{tx.status}</span>
+                          </span>
+                        </td>
+                        <td className="px-6 py-4">
+                          {tx.status !== 'voided' && (
+                            <button onClick={() => setSelectedKoreksi(tx)}
+                              className="inline-flex items-center gap-1.5 text-xs bg-white border border-zinc-200 hover:border-red-300 hover:bg-red-50 text-zinc-700 hover:text-red-800 font-bold px-4 py-2 rounded-xl transition-all shadow-sm">
+                              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                              Koreksi
+                            </button>
+                          )}
                         </td>
                       </tr>
                     ))}
@@ -154,6 +296,17 @@ export default function KasirRekapHarian() {
           </>
         )}
       </div>
+
+      {selectedKoreksi && (
+        <ModalKoreksi
+          transaksi={selectedKoreksi}
+          onClose={() => setSelectedKoreksi(null)}
+          onSuccess={() => {
+            setSelectedKoreksi(null)
+            fetchData()
+          }}
+        />
+      )}
     </Layout>
   )
 }

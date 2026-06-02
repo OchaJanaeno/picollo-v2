@@ -111,18 +111,37 @@ class TransactionController extends Controller
 
             foreach ($request->items as $item) {
                 $product = Product::where('id', $item['product_id'])
-                    ->where('outlet_id', $request->outlet_id)
+                    ->whereHas('outlets', function($q) use ($request) {
+                        $q->where('outlets.id', $request->outlet_id);
+                    })
+                    ->with(['outlets' => function($q) use ($request) {
+                        $q->where('outlets.id', $request->outlet_id);
+                    }])
                     ->where('is_active', true)
-                    ->lockForUpdate() // Cegah race condition stok
+                    ->lockForUpdate() // Cegah race condition stok (lock produk master)
                     ->first();
 
                 if (!$product) {
                     DB::rollBack();
                     return response()->json([
                         'success' => false,
-                        'message' => "Produk ID {$item['product_id']} tidak ditemukan atau tidak aktif.",
+                        'message' => "Produk ID {$item['product_id']} tidak ditemukan atau tidak aktif di outlet ini.",
                     ], 422);
                 }
+
+                $pivot = $product->outlets->first()->pivot;
+                if ($pivot->stok < $item['qty']) {
+                    DB::rollBack();
+                    return response()->json([
+                        'success' => false,
+                        'message' => "Stok produk {$product->nama} tidak mencukupi (Sisa: {$pivot->stok}).",
+                    ], 422);
+                }
+
+                // Kurangi stok di pivot table
+                $product->outlets()->updateExistingPivot($request->outlet_id, [
+                    'stok' => $pivot->stok - $item['qty']
+                ]);
 
                 $subtotal     = $product->harga * $item['qty'];
                 $totalAmount += $subtotal;

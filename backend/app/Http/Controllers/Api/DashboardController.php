@@ -28,9 +28,9 @@ class DashboardController extends Controller
             ->count();
 
         // Total produk aktif
-        $totalProdukAktif = Product::whereIn('outlet_id', $outletIds)
-            ->where('is_active', true)
-            ->count();
+        $totalProdukAktif = Product::whereHas('outlets', function ($q) use ($outletIds) {
+            $q->whereIn('outlets.id', $outletIds);
+        })->where('is_active', true)->count();
 
         // Total outlet aktif milik admin
         $totalOutletAktif = Outlet::whereIn('id', $outletIds)
@@ -44,18 +44,40 @@ class DashboardController extends Controller
             ->sum('total_amount');
 
         // Estimasi keuntungan dari stok yang ada
-        $estimasiKeuntungan = Product::whereIn('outlet_id', $outletIds)
-            ->where('is_active', true)
-            ->whereNotNull('modal')
-            ->whereNotNull('stok')
-            ->get()
-            ->sum(fn($p) => ($p->harga - $p->modal) * $p->stok);
+        $estimasiKeuntungan = DB::table('outlet_product')
+            ->join('products', 'outlet_product.product_id', '=', 'products.id')
+            ->whereIn('outlet_product.outlet_id', $outletIds)
+            ->where('products.is_active', true)
+            ->whereNotNull('products.modal')
+            ->whereNotNull('outlet_product.stok')
+            ->select(DB::raw('SUM((products.harga - products.modal) * outlet_product.stok) as estimasi'))
+            ->value('estimasi') ?? 0;
 
-        // Grafik 7 hari terakhir
-        $grafikPendapatan = Transaction::whereIn('outlet_id', $outletIds)
+        $period = $request->query('period', '7hr');
+        $startDate = now()->subDays(6)->startOfDay();
+        
+        if ($period === '30hr') {
+            $startDate = now()->subDays(29)->startOfDay();
+        } elseif ($period === '6bln') {
+            $startDate = now()->subMonths(6)->startOfDay();
+        }
+
+        // Grafik berdasarkan periode
+        $grafikQuery = Transaction::whereIn('outlet_id', $outletIds)
             ->where('status', 'success')
-            ->where('created_at', '>=', now()->subDays(6)->startOfDay())
-            ->select(
+            ->where('created_at', '>=', $startDate);
+
+        if ($period === '6bln') {
+            $grafikPendapatan = $grafikQuery->select(
+                DB::raw('DATE_FORMAT(created_at, "%Y-%m") as tanggal'),
+                DB::raw('SUM(total_amount) as total'),
+                DB::raw('COUNT(*) as jumlah_transaksi')
+            )
+            ->groupBy('tanggal')
+            ->orderBy('tanggal')
+            ->get();
+        } else {
+            $grafikPendapatan = $grafikQuery->select(
                 DB::raw('DATE(created_at) as tanggal'),
                 DB::raw('SUM(total_amount) as total'),
                 DB::raw('COUNT(*) as jumlah_transaksi')
@@ -63,6 +85,7 @@ class DashboardController extends Controller
             ->groupBy('tanggal')
             ->orderBy('tanggal')
             ->get();
+        }
 
         // Transaksi terbaru (semua status, bukan hanya success — agar kasir tahu ada void)
         $transaksiTerbaru = Transaction::whereIn('outlet_id', $outletIds)

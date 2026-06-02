@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import Layout from '../../components/Layout'
 import api from '../../services/api'
+import { outletService } from '../../services/outletService'
 
 const formatRupiah = (num) => {
   if (!num && num !== 0) return 'Rp 0'
@@ -131,6 +132,97 @@ function ModalTambah({ onClose, onSave }) {
   )
 }
 
+function ModalEdit({ outlet, onClose, onUpdate }) {
+  const [form, setForm]     = useState({ nama: outlet.nama || '', alamat: outlet.alamat || '', kota: outlet.kota || '' })
+  const [errors, setErrors] = useState({})
+  const [loading, setLoading] = useState(false)
+
+  const setField = (f, v) => {
+    setForm(p => ({ ...p, [f]: v }))
+    setErrors(p => ({ ...p, [f]: null }))
+  }
+
+  const handleSave = async () => {
+    const e = {}
+    if (!form.nama) e.nama = 'Nama outlet tidak boleh kosong'
+    if (Object.keys(e).length) { setErrors(e); return }
+
+    setLoading(true)
+    try {
+      const res = await api.put(`/outlets/${outlet.id}`, {
+        nama:   form.nama,
+        alamat: form.alamat || null,
+        kota:   form.kota   || null,
+      })
+      onUpdate(res.data.data)
+    } catch (err) {
+      setErrors({ global: err.response?.data?.message || 'Gagal mengubah outlet' })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/60 z-[60] flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl">
+        <div className="flex items-center justify-between px-6 py-5 border-b border-zinc-100">
+          <div>
+            <h3 className="font-bold text-zinc-900">Edit Outlet</h3>
+          </div>
+          <button onClick={onClose} className="text-zinc-400 hover:text-zinc-700">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <div className="px-6 py-5 space-y-4">
+          {errors.global && (
+            <div className="bg-red-50 border border-red-200 text-red-600 rounded-xl px-4 py-3 text-sm">
+              {errors.global}
+            </div>
+          )}
+          <div>
+            <label className="text-zinc-700 text-sm font-semibold mb-1.5 block">Nama Outlet *</label>
+            <input type="text" value={form.nama} onChange={e => setField('nama', e.target.value)}
+              placeholder="Contoh: Outlet Surabaya"
+              className={`w-full border rounded-xl px-4 py-2.5 text-sm focus:outline-none transition-colors
+                ${errors.nama ? 'border-red-400 bg-red-50' : 'border-zinc-300 focus:border-red-800'}`} />
+            {errors.nama && <p className="text-xs text-red-500 mt-1">{errors.nama}</p>}
+          </div>
+          <div>
+            <label className="text-zinc-700 text-sm font-semibold mb-1.5 block">Alamat</label>
+            <textarea value={form.alamat} onChange={e => setField('alamat', e.target.value)}
+              placeholder="Jl. Contoh No. 1" rows={3}
+              className="w-full border border-zinc-300 rounded-xl px-4 py-2.5 text-sm
+                         focus:outline-none focus:border-red-800 transition-colors resize-none" />
+          </div>
+          <div>
+            <label className="text-zinc-700 text-sm font-semibold mb-1.5 block">Kota</label>
+            <input type="text" value={form.kota} onChange={e => setField('kota', e.target.value)}
+              placeholder="Contoh: Surabaya"
+              className="w-full border border-zinc-300 rounded-xl px-4 py-2.5 text-sm
+                         focus:outline-none focus:border-red-800 transition-colors" />
+          </div>
+        </div>
+
+        <div className="px-6 py-4 border-t border-zinc-100 flex gap-2">
+          <button onClick={onClose}
+            className="flex-1 border border-zinc-300 text-zinc-700 font-semibold py-2.5
+                       rounded-xl text-sm hover:bg-zinc-50 transition-colors">
+            Batal
+          </button>
+          <button onClick={handleSave} disabled={loading}
+            className="flex-1 bg-red-800 hover:bg-red-900 disabled:bg-red-900/50 text-white
+                       font-semibold py-2.5 rounded-xl text-sm transition-colors">
+            {loading ? 'Menyimpan...' : 'Simpan Perubahan'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function ModalDetail({ outlet, onClose, onToggleStatus }) {
   const [loading, setLoading] = useState(false)
 
@@ -149,15 +241,22 @@ function ModalDetail({ outlet, onClose, onToggleStatus }) {
   }
 
   return (
-    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 bg-black/60 z-40 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl">
         <div className="flex items-center justify-between px-6 py-5 border-b border-zinc-100">
           <h3 className="font-bold text-zinc-900">Detail Outlet</h3>
-          <button onClick={onClose} className="text-zinc-400 hover:text-zinc-700">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
+          <div className="flex gap-2">
+            <button onClick={() => window.dispatchEvent(new CustomEvent('open-edit-outlet', { detail: outlet }))} className="text-zinc-400 hover:text-zinc-700 p-1">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+              </svg>
+            </button>
+            <button onClick={onClose} className="text-zinc-400 hover:text-zinc-700 p-1">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
         </div>
         <div className="px-6 py-5">
           <div className="bg-zinc-50 rounded-xl p-4 space-y-2.5">
@@ -181,6 +280,11 @@ function ModalDetail({ outlet, onClose, onToggleStatus }) {
           </div>
         </div>
         <div className="px-6 py-4 border-t border-zinc-100 flex gap-2">
+          <button onClick={() => window.dispatchEvent(new CustomEvent('open-atur-produk', { detail: outlet }))}
+            className="flex-1 bg-zinc-100 hover:bg-zinc-200 text-zinc-900 font-semibold
+                       py-2.5 rounded-xl text-sm transition-colors border border-zinc-200">
+            Atur Menu & Stok
+          </button>
           <button onClick={handleToggle} disabled={loading}
             className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition-colors border
               ${outlet.status === 'nonaktif'
@@ -199,6 +303,168 @@ function ModalDetail({ outlet, onClose, onToggleStatus }) {
   )
 }
 
+function ModalAturProduk({ outlet, onClose }) {
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [masterProducts, setMasterProducts] = useState([])
+  const [selection, setSelection] = useState({}) // { [id]: { selected: boolean, stok: number } }
+
+  useEffect(() => {
+    const fetchAll = async () => {
+      setLoading(true)
+      try {
+        // Fetch Master Katalog
+        const resMaster = await api.get('/products')
+        const allProds = resMaster.data.data || []
+        setMasterProducts(allProds)
+
+        // Fetch Outlet's assigned products
+        const resOutlet = await api.get(`/outlets/${outlet.id}/products`)
+        const assigned = resOutlet.data.data || []
+        
+        // Build selection map
+        const initialMap = {}
+        allProds.forEach(p => {
+          const matched = assigned.find(a => a.id === p.id)
+          initialMap[p.id] = {
+            selected: !!matched,
+            stok: matched ? (matched.pivot?.stok || 0) : 0
+          }
+        })
+        setSelection(initialMap)
+      } catch (err) {
+        console.error(err)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchAll()
+  }, [outlet.id])
+
+  const toggleSelect = (id) => {
+    setSelection(prev => ({
+      ...prev,
+      [id]: { ...prev[id], selected: !prev[id].selected }
+    }))
+  }
+
+  const changeStok = (id, val) => {
+    setSelection(prev => ({
+      ...prev,
+      [id]: { ...prev[id], stok: val === '' ? '' : parseInt(val) }
+    }))
+  }
+
+  const handleSave = async () => {
+    setSaving(true)
+    try {
+      const payloadProducts = Object.keys(selection)
+        .filter(id => selection[id].selected)
+        .map(id => ({
+          id: parseInt(id),
+          stok: selection[id].stok === '' ? 0 : selection[id].stok
+        }))
+
+      await api.post(`/outlets/${outlet.id}/products`, { products: payloadProducts })
+      onClose()
+    } catch (err) {
+      alert('Gagal menyimpan menu dan stok.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl w-full max-w-2xl shadow-2xl max-h-[90vh] flex flex-col">
+        <div className="flex items-center justify-between px-6 py-5 border-b border-zinc-100">
+          <div>
+            <h3 className="font-bold text-zinc-900">Atur Menu & Stok</h3>
+            <p className="text-zinc-400 text-xs mt-0.5">Outlet: {outlet.nama}</p>
+          </div>
+          <button onClick={onClose} className="text-zinc-400 hover:text-zinc-700 p-1">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto px-6 py-4">
+          {loading ? (
+            <div className="flex justify-center py-10">
+              <p className="text-zinc-500 animate-pulse">Memuat katalog...</p>
+            </div>
+          ) : masterProducts.length === 0 ? (
+            <div className="text-center py-10 text-zinc-500">
+              Belum ada produk di Master Katalog.
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {masterProducts.map(p => {
+                const sel = selection[p.id] || { selected: false, stok: 0 }
+                return (
+                  <div key={p.id} className={`border rounded-xl p-3 flex items-center gap-4 transition-colors ${sel.selected ? 'border-red-300 bg-red-50/20' : 'border-zinc-200 bg-white'}`}>
+                    {/* Toggle Button */}
+                    <button onClick={() => toggleSelect(p.id)} className="shrink-0 outline-none">
+                      <div className={`w-10 h-6 rounded-full p-1 transition-colors ${sel.selected ? 'bg-red-600' : 'bg-zinc-300'}`}>
+                        <div className={`w-4 h-4 bg-white rounded-full transition-transform ${sel.selected ? 'translate-x-4' : 'translate-x-0'}`} />
+                      </div>
+                    </button>
+                    
+                    {/* Photo */}
+                    <div className="w-12 h-12 rounded-lg bg-zinc-100 shrink-0 overflow-hidden">
+                      {p.gambar_url ? (
+                        <img src={p.gambar_url} alt={p.nama} className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-zinc-300">
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
+                              d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                          </svg>
+                        </div>
+                      )}
+                    </div>
+                    
+                    {/* Product Info */}
+                    <div className="flex-1">
+                      <p className="font-semibold text-zinc-900 text-sm">{p.nama}</p>
+                      <p className="text-zinc-500 text-xs">{p.kategori || 'Tanpa kategori'} • Rp {Number(p.harga).toLocaleString('id-ID')}</p>
+                    </div>
+
+                    {/* Stock Input */}
+                    {sel.selected && (
+                      <div className="flex items-center gap-2 shrink-0">
+                        <label className="text-xs text-zinc-600 font-semibold">Stok:</label>
+                        <input type="number" min="0"
+                          value={sel.stok === 0 ? '' : sel.stok}
+                          placeholder="0"
+                          onChange={e => changeStok(p.id, e.target.value)}
+                          className="w-20 border border-zinc-300 rounded-lg px-2 py-1 text-sm focus:outline-none focus:border-red-600 text-center"
+                        />
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
+
+        <div className="px-6 py-4 border-t border-zinc-100 flex gap-2 shrink-0">
+          <button onClick={onClose}
+            className="flex-1 border border-zinc-300 text-zinc-700 font-semibold py-2.5 rounded-xl text-sm hover:bg-zinc-50 transition-colors">
+            Batal
+          </button>
+          <button onClick={handleSave} disabled={loading || saving}
+            className="flex-1 bg-red-800 hover:bg-red-900 disabled:bg-red-900/50 text-white font-semibold py-2.5 rounded-xl text-sm transition-colors">
+            {saving ? 'Menyimpan...' : 'Simpan Pengaturan'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function AdminOutlet() {
   const [outlets, setOutlets]       = useState([])
   const [loading, setLoading]       = useState(true)
@@ -206,14 +472,27 @@ export default function AdminOutlet() {
   const [filterStatus, setFilter]   = useState('semua')
   const [showTambah, setShowTambah] = useState(false)
   const [detailOutlet, setDetail]   = useState(null)
+  const [aturOutlet, setAturOutlet] = useState(null)
+  const [editOutlet, setEditOutlet] = useState(null)
 
   useEffect(() => { fetchOutlets() }, [])
+
+  useEffect(() => {
+    const handleOpenAtur = (e) => setAturOutlet(e.detail)
+    const handleOpenEdit = (e) => setEditOutlet(e.detail)
+    window.addEventListener('open-atur-produk', handleOpenAtur)
+    window.addEventListener('open-edit-outlet', handleOpenEdit)
+    return () => {
+      window.removeEventListener('open-atur-produk', handleOpenAtur)
+      window.removeEventListener('open-edit-outlet', handleOpenEdit)
+    }
+  }, [])
 
   const fetchOutlets = async () => {
     setLoading(true)
     try {
       // FIX: Hit API yang sesungguhnya
-      const res = await api.get('/outlets')
+      const res = await outletService.getAll()
       setOutlets(res.data.data?.data || res.data.data || [])
     } catch (err) {
       console.error('Gagal fetch outlets:', err)
@@ -226,6 +505,14 @@ export default function AdminOutlet() {
   const handleSave = (outlet) => {
     setOutlets(prev => [outlet, ...prev])
     setShowTambah(false)
+  }
+
+  const handleUpdate = (updatedOutlet) => {
+    setOutlets(prev => prev.map(o => o.id === updatedOutlet.id ? { ...o, ...updatedOutlet } : o))
+    if (detailOutlet && detailOutlet.id === updatedOutlet.id) {
+      setDetail(prev => ({ ...prev, ...updatedOutlet }))
+    }
+    setEditOutlet(null)
   }
 
   // FIX: handleToggleStatus sekarang terima newStatus dari ModalDetail
@@ -261,6 +548,19 @@ export default function AdminOutlet() {
           outlet={detailOutlet}
           onClose={() => setDetail(null)}
           onToggleStatus={handleToggleStatus}
+        />
+      )}
+      {aturOutlet && (
+        <ModalAturProduk
+          outlet={aturOutlet}
+          onClose={() => setAturOutlet(null)}
+        />
+      )}
+      {editOutlet && (
+        <ModalEdit
+          outlet={editOutlet}
+          onClose={() => setEditOutlet(null)}
+          onUpdate={handleUpdate}
         />
       )}
 
