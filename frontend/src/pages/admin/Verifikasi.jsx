@@ -13,12 +13,20 @@ export default function AdminVerifikasi() {
     setLoading(true)
     setResult(null)
     try {
-      // const res = await verifikasiService.verifyHash(hash)
-      // setResult(res.data.data)
-      setResult(null)
-      alert('Verifikasi akan tersedia setelah backend terhubung')
+      const res = await verifikasiService.verifyByHash(hash)
+      const data = res.data.data || res.data
+      setResult({
+        valid: data.status === 'verified' || data.valid === true,
+        data: {
+          'Kode Transaksi': data.transaction?.transaction_code || data.transaction_code || '-',
+          'Outlet': data.transaction?.outlet?.nama || '-',
+          'Total': data.transaction?.total_amount ? `Rp ${Number(data.transaction.total_amount).toLocaleString('id-ID')}` : '-',
+          'Status Hash': data.status || '-',
+          'Hash': data.hash_sha256 ? data.hash_sha256.substring(0, 24) + '...' : '-',
+        }
+      })
     } catch (err) {
-      setResult({ valid: false, error: err.response?.data?.message || 'Hash tidak ditemukan' })
+      setResult({ valid: false, error: err.response?.data?.message || 'Hash tidak ditemukan atau tidak valid' })
     } finally { setLoading(false) }
   }
 

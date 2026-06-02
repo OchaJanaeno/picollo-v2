@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import Layout from '../../components/Layout'
+import { verifikasiService } from '../../services/verifikasiService'
 
 // Format hash yang valid: 64 karakter hex (SHA-256)
 // Contoh: a3f2c8e1b4d7...
@@ -28,43 +29,14 @@ export default function AuditorVerifikasi() {
 
     setLoading(true)
     try {
-      // TODO: backend siap → uncomment:
-      // const res = await verifikasiService.cekHash(hash.trim())
-      // setHasil(res.data.data)
-
-      // Dummy sementara — simulasi 3 kemungkinan hasil
-      await new Promise(r => setTimeout(r, 1500))
-
-      // Simulasi berdasarkan karakter pertama hash (hanya untuk demo)
-      const firstChar = hash.trim()[0].toLowerCase()
-      if (firstChar < '4') {
-        // Hash valid → transaksi tidak diubah
-        setHasil({
-          status: 'valid',
-          transaksi: {
-            id: 'TX-' + hash.slice(0, 6).toUpperCase(),
-            nominal: 'Rp 150.000',
-            kasir: 'Andi Santoso',
-            outlet: 'Outlet Malang 1',
-            waktu: '20 Mei 2026, 10:32',
-            produk: 'Kopi Hitam x2, Croissant x1',
-            hash_blockchain: hash.trim(),
-          }
-        })
-      } else if (firstChar < '8') {
-        // Hash tidak cocok → kemungkinan FRAUD
-        setHasil({
-          status: 'fraud',
-          detail: 'Hash transaksi tidak cocok dengan yang tersimpan di blockchain. Data kemungkinan telah dimanipulasi.',
-          hash_input: hash.trim(),
-          hash_blockchain: 'a' + hash.slice(1).trim(),
-        })
-      } else {
-        // Hash tidak ditemukan
-        setHasil({ status: 'not_found' })
-      }
+      const res = await verifikasiService.verifyByHash(hash.trim())
+      setHasil(res.data.data)
     } catch (err) {
-      setError(err.response?.data?.message || 'Gagal melakukan verifikasi. Coba lagi.')
+      if (err.response?.status === 404) {
+        setHasil({ status: 'not_found' })
+      } else {
+        setError(err.response?.data?.message || 'Gagal melakukan verifikasi. Coba lagi.')
+      }
     } finally { setLoading(false) }
   }
 

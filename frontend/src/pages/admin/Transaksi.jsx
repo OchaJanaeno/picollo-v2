@@ -23,13 +23,33 @@ export default function AdminTransaksi() {
 
   useEffect(() => { fetchData() }, [])
 
+  const formatRupiah = (num) => {
+    if (!num && num !== 0) return '-'
+    return `Rp ${Number(num).toLocaleString('id-ID')}`
+  }
+
   const fetchData = async () => {
     setLoading(true)
     try {
-      // const res = await transaksiService.getAll()
-      // setData(res.data.data || [])
+      const res = await transaksiService.getAll()
+      const raw = res.data.data?.data || res.data.data || []
+      const mapped = raw.map(tx => ({
+        id: tx.transaction_code || tx.id,
+        rawId: tx.id,
+        kasir: tx.kasir?.name || '-',
+        outlet: tx.outlet?.nama || '-',
+        total: formatRupiah(tx.total_amount),
+        totalRaw: tx.total_amount,
+        metode: tx.metode_pembayaran === 'qris' ? 'QRIS' : tx.metode_pembayaran === 'transfer' ? 'Transfer' : 'Tunai',
+        waktu: tx.created_at ? new Date(tx.created_at).toLocaleString('id-ID', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-',
+        hash: tx.hash_verification?.hash_sha256 || '-',
+        status: tx.status === 'success' ? 'verified' : tx.status || 'pending',
+      }))
+      setData(mapped)
+    } catch (err) {
+      console.error('Fetch transaksi error:', err)
       setData([])
-    } catch { setData([]) }
+    }
     finally { setLoading(false) }
   }
 

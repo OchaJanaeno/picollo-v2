@@ -8,14 +8,31 @@ export default function AuditorTransaksi() {
   const [search, setSearch] = useState('')
   const [filterStatus, setFilterStatus] = useState('semua')
 
+  const formatRupiah = (num) => {
+    if (!num && num !== 0) return '-'
+    return `Rp ${Number(num).toLocaleString('id-ID')}`
+  }
+
   useEffect(() => { fetchData() }, [])
   const fetchData = async () => {
     setLoading(true)
     try {
-      // const res = await transaksiService.getAll()
-      // setData(res.data.data || [])
+      const res = await transaksiService.getAll()
+      const raw = res.data.data?.data || res.data.data || []
+      const mapped = raw.map(tx => ({
+        id: tx.transaction_code || tx.id,
+        kasir: tx.kasir?.name || '-',
+        outlet: tx.outlet?.nama || '-',
+        total: formatRupiah(tx.total_amount),
+        hash: tx.hash_verification?.hash_sha256 ? tx.hash_verification.hash_sha256.substring(0, 16) + '...' : '-',
+        waktu: tx.created_at ? new Date(tx.created_at).toLocaleString('id-ID', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-',
+        status: tx.hash_verification?.status || (tx.status === 'success' ? 'verified' : tx.status || 'pending'),
+      }))
+      setData(mapped)
+    } catch (err) {
+      console.error('Fetch auditor transaksi error:', err)
       setData([])
-    } catch { setData([]) }
+    }
     finally { setLoading(false) }
   }
 

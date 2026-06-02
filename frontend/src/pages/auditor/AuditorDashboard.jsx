@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import Layout from '../../components/Layout'
-import { dashboardService } from '../../services/dashboardService'
+import { transaksiService } from '../../services/transaksiService'
+import { verifikasiService } from '../../services/verifikasiService'
 
 export default function AuditorDashboard() {
   const [stats, setStats] = useState(null)
@@ -12,11 +13,36 @@ export default function AuditorDashboard() {
   const fetchData = async () => {
     setLoading(true)
     try {
-      // const res = await dashboardService.getAuditorStats()
-      // setStats(res.data.stats)
-      // setRecentVerifikasi(res.data.verifikasi || [])
+      const [txRes, verRes] = await Promise.all([
+        transaksiService.getAll(),
+        verifikasiService.getHistory(),
+      ])
+      
+      const allTx = txRes.data.data?.data || txRes.data.data || []
+      const verData = verRes.data.data?.data || verRes.data.data || []
+      
+      const verified = allTx.filter(tx => tx.hash_verification?.status === 'verified' || tx.status === 'success').length
+      const fraud = allTx.filter(tx => tx.hash_verification?.status === 'fraud_detected').length
+      const pending = allTx.length - verified - fraud
+      
+      setStats({
+        total_transaksi: allTx.length,
+        total_verified: verified,
+        total_fraud: fraud,
+        total_pending: pending,
+      })
+      
+      // Recent verifications
+      const recent = verData.slice(0, 5).map(v => ({
+        hash: v.hash_sha256 ? v.hash_sha256.substring(0, 20) + '...' : '-',
+        waktu: v.created_at ? new Date(v.created_at).toLocaleString('id-ID', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '-',
+        status: v.status || 'pending',
+      }))
+      setRecentVerifikasi(recent)
+    } catch (err) {
+      console.error('Fetch auditor dashboard error:', err)
       setStats(null); setRecentVerifikasi([])
-    } catch { setStats(null); setRecentVerifikasi([]) }
+    }
     finally { setLoading(false) }
   }
 

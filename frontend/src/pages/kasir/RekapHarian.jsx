@@ -1,31 +1,77 @@
 import { useState, useEffect } from 'react'
 import Layout from '../../components/Layout'
 import { rekapService } from '../../services/rekapService'
+import { transaksiService } from '../../services/transaksiService'
+import useAuthStore from '../../store/authStore'
+
+const formatRupiah = (num) => {
+  if (!num && num !== 0) return '-'
+  return `Rp ${Number(num).toLocaleString('id-ID')}`
+}
 
 export default function KasirRekapHarian() {
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [sending, setSending] = useState(false)
   const [sent, setSent] = useState(false)
+  const { user, outlets } = useAuthStore()
 
   useEffect(() => { fetchData() }, [])
 
   const fetchData = async () => {
     setLoading(true)
     try {
-      // const res = await rekapService.getHarian()
-      // setData(res.data.data)
+      const res = await transaksiService.getAll({ all: true })
+      const allTx = res.data.data?.data || res.data.data || []
+      
+      const todayLocal = new Date().toLocaleDateString('sv-SE')
+      const todayTx = allTx.filter(tx => {
+        if (!tx.created_at) return false
+        const txDate = new Date(tx.created_at).toLocaleDateString('sv-SE')
+        return txDate === todayLocal
+      })
+      
+      const totalOmzet = todayTx.reduce((sum, tx) => sum + (Number(tx.total_amount) || 0), 0)
+      const totalQris = todayTx.filter(tx => tx.metode_pembayaran === 'qris').reduce((sum, tx) => sum + (Number(tx.total_amount) || 0), 0)
+      const totalTunai = todayTx.filter(tx => tx.metode_pembayaran === 'tunai').reduce((sum, tx) => sum + (Number(tx.total_amount) || 0), 0)
+      
+      setData({
+        total_transaksi: todayTx.length,
+        total_omzet: formatRupiah(totalOmzet),
+        total_qris: formatRupiah(totalQris),
+        total_tunai: formatRupiah(totalTunai),
+        transaksi: todayTx.map(tx => ({
+          id: tx.transaction_code || tx.id,
+          produk: tx.items?.map(i => i.nama_produk).join(', ') || '-',
+          qty: tx.items?.reduce((s, i) => s + (i.qty || 0), 0) || 0,
+          total: formatRupiah(tx.total_amount),
+          metode: tx.metode_pembayaran === 'qris' ? 'QRIS' : tx.metode_pembayaran === 'transfer' ? 'Transfer' : 'Tunai',
+          waktu: tx.created_at ? new Date(tx.created_at).toLocaleString('id-ID', { hour: '2-digit', minute: '2-digit' }) : '-',
+          status: tx.hash_verification?.status || (tx.status === 'success' ? 'verified' : tx.status || 'pending'),
+        })),
+      })
+    } catch (err) {
+      console.error('Fetch rekap error:', err)
       setData(null)
-    } catch { setData(null) }
+    }
     finally { setLoading(false) }
   }
 
   const handleKirim = async () => {
     setSending(true)
     try {
-      // await rekapService.kirimKeAdmin({ date: new Date().toISOString().split('T')[0] })
+      const outletId = outlets?.[0]?.id || user?.outlets?.[0]?.id
+      if (!outletId) { alert('Outlet tidak ditemukan'); setSending(false); return }
+      const todayLocal = new Date().toLocaleDateString('sv-SE')
+      await rekapService.kirimKeAdmin({
+        outlet_id: outletId,
+        tanggal: todayLocal,
+      })
       setSent(true)
-    } catch {} finally { setSending(false) }
+    } catch (err) {
+      console.error('Kirim rekap error:', err)
+      alert('Gagal kirim rekap: ' + (err.response?.data?.message || err.message))
+    } finally { setSending(false) }
   }
 
   return (

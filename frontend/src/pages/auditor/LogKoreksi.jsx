@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import Layout from '../../components/Layout'
+import { logKoreksiService } from '../../services/logKoreksiService'
 
 export default function AuditorLogKoreksi() {
   const [data, setData]       = useState([])
@@ -12,43 +13,26 @@ export default function AuditorLogKoreksi() {
   const fetchData = async () => {
     setLoading(true)
     try {
-      // TODO: const res = await auditorService.getLogKoreksi()
-      setData([
-        {
-          id: 1,
-          waktu: '20 Mei 2026, 09:15',
-          kasir: 'Andi Santoso',
-          outlet: 'Outlet Malang 1',
-          tipe: 'edit',
-          transaksiId: 'TX-001234',
-          perubahan: 'Nominal: Rp 50.000 → Rp 75.000',
-          alasan: 'Salah input harga produk',
-          disetujui: true,
-        },
-        {
-          id: 2,
-          waktu: '19 Mei 2026, 14:30',
-          kasir: 'Citra Dewi',
-          outlet: 'Outlet Malang 2',
-          tipe: 'hapus',
-          transaksiId: 'TX-001198',
-          perubahan: 'Transaksi dihapus',
-          alasan: 'Transaksi duplikat',
-          disetujui: true,
-        },
-        {
-          id: 3,
-          waktu: '18 Mei 2026, 11:00',
-          kasir: 'Doni Pratama',
-          outlet: 'Outlet Batu',
-          tipe: 'edit',
-          transaksiId: 'TX-001150',
-          perubahan: 'Metode: Tunai → QRIS',
-          alasan: 'Pelanggan ganti metode bayar',
-          disetujui: false,
-        },
-      ])
-    } catch { setData([]) }
+      const res = await logKoreksiService.getAll()
+      const raw = res.data.data?.data || res.data.data || []
+      const mapped = raw.map(l => ({
+        id: l.id,
+        waktu: l.created_at ? new Date(l.created_at).toLocaleString('id-ID', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-',
+        kasir: l.corrected_by?.name || l.correctedBy?.name || '-',
+        outlet: l.outlet?.nama || '-',
+        tipe: l.correction_type === 'void' ? 'hapus' : l.correction_type || '-',
+        transaksiId: l.transaction?.transaction_code || '-',
+        perubahan: l.correction_type === 'void' ? 'Transaksi di-void' : 
+          `Hash: ${l.hash_sebelum ? l.hash_sebelum.substring(0, 8) + '...' : '-'} → ${l.hash_sesudah ? l.hash_sesudah.substring(0, 8) + '...' : '-'}`,
+        alasan: l.alasan || '-',
+        disetujui: l.status === 'approved',
+        status: l.status,
+      }))
+      setData(mapped)
+    } catch (err) {
+      console.error('Fetch log koreksi error:', err)
+      setData([])
+    }
     finally { setLoading(false) }
   }
 

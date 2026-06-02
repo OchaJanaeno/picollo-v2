@@ -30,6 +30,13 @@ class TransactionController extends Controller
             $query->where('user_id', $user->id);
         }
 
+        if ($request->query('all') === 'true') {
+            return response()->json([
+                'success' => true,
+                'data'    => $query->get(),
+            ]);
+        }
+
         return response()->json([
             'success' => true,
             'data'    => $query->paginate(15),
@@ -117,14 +124,6 @@ class TransactionController extends Controller
                     ], 422);
                 }
 
-                if ($product->stok !== null && $product->stok < $item['qty']) {
-                    DB::rollBack();
-                    return response()->json([
-                        'success' => false,
-                        'message' => "Stok produk '{$product->nama}' tidak cukup. Stok tersedia: {$product->stok}.",
-                    ], 422);
-                }
-
                 $subtotal     = $product->harga * $item['qty'];
                 $totalAmount += $subtotal;
 
@@ -135,10 +134,6 @@ class TransactionController extends Controller
                     'qty'          => $item['qty'],
                     'subtotal'     => $subtotal,
                 ];
-
-                if ($product->stok !== null) {
-                    $product->decrement('stok', $item['qty']);
-                }
             }
 
             // Generate transaction_code unik dengan loop + DB unique constraint sebagai safety net
