@@ -184,9 +184,6 @@ class TransactionController extends Controller
                 }
             } while ($code === null);
 
-            $isOnlinePayment = in_array($request->metode_pembayaran, ['qris', 'transfer']);
-            $status = $isOnlinePayment ? 'pending' : 'success';
-
             $transaction = Transaction::create([
                 'transaction_code'  => $code,
                 'outlet_id'         => $request->outlet_id,
@@ -194,7 +191,7 @@ class TransactionController extends Controller
                 'total_amount'      => $totalAmount,
                 'metode_pembayaran' => $request->metode_pembayaran,
                 'payment_reference' => $request->payment_reference,
-                'status'            => $status,
+                'status'            => 'success',
                 'catatan'           => $request->catatan,
             ]);
 
@@ -204,53 +201,31 @@ class TransactionController extends Controller
                 ]));
             }
 
-            $snapToken = null;
+            // Ambil previous_hash dari transaksi sukses terakhir di outlet yang sama
+            $previousHash = HashVerification::whereHas('transaction', function ($q) use ($request) {
+                $q->where('transactions.outlet_id', $request->outlet_id)
+                  ->where('transactions.status', 'success');
+            })
+                ->orderByDesc('id')
+                ->value('hash_sha256');
 
-            if ($isOnlinePayment) {
-                \Midtrans\Config::$serverKey = config('midtrans.server_key');
-                \Midtrans\Config::$isProduction = config('midtrans.is_production');
-                \Midtrans\Config::$isSanitized = config('midtrans.is_sanitized');
-                \Midtrans\Config::$is3ds = config('midtrans.is_3ds');
+            // Susun signature: Code|Outlet|Total|Timestamp|PrevHash
+            $signature = implode('|', [
+                $transaction->transaction_code,
+                $transaction->outlet_id,
+                $transaction->total_amount,
+                $transaction->created_at->timestamp,
+                $previousHash ?? '',
+            ]);
 
-                $params = [
-                    'transaction_details' => [
-                        'order_id' => $transaction->transaction_code,
-                        'gross_amount' => $transaction->total_amount,
-                    ],
-                    'customer_details' => [
-                        'first_name' => $request->user()->name,
-                        'email' => $request->user()->email,
-                    ],
-                ];
+            $hash = hash('sha256', $signature);
 
-                $snapToken = \Midtrans\Snap::getSnapToken($params);
-            } else {
-                // Ambil previous_hash dari transaksi sukses terakhir di outlet yang sama
-                $previousHash = HashVerification::whereHas('transaction', function ($q) use ($request) {
-                    $q->where('transactions.outlet_id', $request->outlet_id)
-                      ->where('transactions.status', 'success');
-                })
-                    ->orderByDesc('id')
-                    ->value('hash_sha256');
-
-                // Susun signature: Code|Outlet|Total|Timestamp|PrevHash
-                $signature = implode('|', [
-                    $transaction->transaction_code,
-                    $transaction->outlet_id,
-                    $transaction->total_amount,
-                    $transaction->created_at->timestamp,
-                    $previousHash ?? '',
-                ]);
-
-                $hash = hash('sha256', $signature);
-
-                HashVerification::create([
-                    'transaction_id' => $transaction->id,
-                    'hash_sha256'    => $hash,
-                    'previous_hash'  => $previousHash,
-                    'status'         => 'verified',
-                ]);
-            }
+            HashVerification::create([
+                'transaction_id' => $transaction->id,
+                'hash_sha256'    => $hash,
+                'previous_hash'  => $previousHash,
+                'status'         => 'verified',
+            ]);
 
             DB::commit();
 
@@ -258,7 +233,6 @@ class TransactionController extends Controller
                 'success' => true,
                 'message' => 'Transaksi berhasil dibuat.',
                 'data'    => $transaction->load(['items', 'hashVerification']),
-                'snap_token' => $snapToken,
             ], 201);
 
         } catch (UniqueConstraintViolationException $e) {

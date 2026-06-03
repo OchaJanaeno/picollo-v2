@@ -166,9 +166,9 @@ function ModalPembayaran({ keranjang, total, user, kasirNama, onClose, onSuccess
 
       const res = await transaksiService.create(payload)
       const txData = res.data.data
-      const snapToken = res.data.snap_token
 
-      const buildStrukData = () => ({
+      // Buat data struk
+      setStruk({
         id: txData.transaction_code,
         waktu: new Date(txData.created_at).toLocaleString('id-ID', {
           day: 'numeric', month: 'long', year: 'numeric',
@@ -178,35 +178,9 @@ function ModalPembayaran({ keranjang, total, user, kasirNama, onClose, onSuccess
         items: keranjang,
         total,
         metode,
-        uangDiterima: uangNum || total,
-        kembalian: kembalian || 0,
+        uangDiterima: uangNum,
+        kembalian,
       })
-
-      if (snapToken) {
-        window.snap.pay(snapToken, {
-          onSuccess: function(result) {
-            setStruk(buildStrukData())
-            setLoading(false)
-          },
-          onPending: function(result) {
-            alert('Menunggu pembayaran Anda...')
-            onClose()
-            setLoading(false)
-          },
-          onError: function(result) {
-            alert('Pembayaran gagal')
-            setLoading(false)
-          },
-          onClose: function() {
-            alert('Anda menutup popup sebelum menyelesaikan pembayaran')
-            setLoading(false)
-          }
-        })
-        return
-      }
-
-      // Buat data struk untuk tunai
-      setStruk(buildStrukData())
     } catch (err) {
       alert(err.response?.data?.message || 'Gagal memproses pembayaran')
     } finally { setLoading(false) }

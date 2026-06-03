@@ -18,15 +18,11 @@ class CorrectionLog extends Model
         'hash_sebelum',
         'hash_sesudah',
         'status',
-        'is_suspicious',
-        'fraud_indicators',
     ];
 
     protected $casts = [
         'old_data' => 'array',
         'new_data' => 'array',
-        'fraud_indicators' => 'array',
-        'is_suspicious' => 'boolean',
     ];
 
     public function transaction()
