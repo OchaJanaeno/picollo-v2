@@ -1,15 +1,17 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import api from '../../services/api'
 import useAuthStore from '../../store/authStore';
 
 const LoginPage = () => {
     const navigate = useNavigate();
+    const location = useLocation();
     const { setAuth } = useAuthStore();
     const [form, setForm] = useState({ email: '', password: '' });
     const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
+    const justRegistered = location.state?.registered === true;
 
     const handleChange = (e) => {
         setForm({ ...form, [e.target.name]: e.target.value });
@@ -38,9 +40,14 @@ const LoginPage = () => {
 
             setAuth(user, token, outlets);
 
-            if (user.role === 'admin') navigate('/admin/dashboard');
-            else if (user.role === 'kasir') navigate('/kasir/dashboard');
-            else if (user.role === 'auditor') navigate('/auditor/dashboard');
+            const dest =
+                user.role === 'admin'   ? '/admin/dashboard'   :
+                user.role === 'kasir'   ? '/kasir/dashboard'   :
+                user.role === 'auditor' ? '/auditor/dashboard' : '/login';
+
+            // setTimeout(0) supaya React selesai commit setAuth ke store dulu
+            // sebelum navigate, mencegah ProtectedRoute redirect lebih cepat dari state update
+            setTimeout(() => navigate(dest, { replace: true }), 0);
         } catch (err) {
             setError(err.response?.data?.message || 'Email atau password salah.');
         } finally {
@@ -192,6 +199,12 @@ const LoginPage = () => {
                     <div className="card">
                         <div className="card-title">Selamat Datang!</div>
                         <div className="card-sub">Masuk Untuk Melanjutkan</div>
+
+                        {justRegistered && (
+                            <div className="alert-error" style={{ background: '#f0fdf4', borderColor: '#bbf7d0', color: '#16a34a' }}>
+                                <span>✅</span> Registrasi berhasil! Silakan masuk dengan akun Anda.
+                            </div>
+                        )}
 
                         {error && (
                             <div className="alert-error">

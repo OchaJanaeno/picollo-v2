@@ -1,11 +1,9 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../../services/api'
-import useAuthStore from '../../store/authStore';
 
 const RegisterPage = () => {
     const navigate = useNavigate();
-    const { setAuth } = useAuthStore();
     const [form, setForm] = useState({
         name: '',
         email: '',
@@ -34,10 +32,8 @@ const RegisterPage = () => {
         setError('');
         setErrors({});
         try {
-            const res = await api.post('/auth/register', form);
-            const { user, token, outlet } = res.data.data;
-            setAuth(user, token, outlet ? [outlet] : []);
-            navigate('/admin/dashboard');
+            await api.post('/auth/register', form);
+            navigate('/login', { state: { registered: true } });
         } catch (err) {
             if (err.response?.data?.errors) {
                 setErrors(err.response.data.errors);
