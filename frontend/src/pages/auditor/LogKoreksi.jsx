@@ -29,6 +29,8 @@ export default function AuditorLogKoreksi() {
         alasan: l.alasan || '-',
         disetujui: l.status === 'approved',
         status: l.status,
+        isSuspicious: l.is_suspicious,
+        fraudIndicators: l.fraud_indicators || [],
       }))
       setData(mapped)
     } catch (err) {
@@ -174,15 +176,31 @@ export default function AuditorLogKoreksi() {
                       {d.perubahan}
                     </td>
                     <td className="px-5 py-3.5 text-xs text-zinc-500 max-w-xs">
-                      {d.alasan}
+                      <p>{d.alasan}</p>
+                      {d.isSuspicious && d.fraudIndicators && d.fraudIndicators.length > 0 && (
+                        <div className="mt-2 space-y-1">
+                          {d.fraudIndicators.map((ind, i) => (
+                            <p key={i} className="text-red-600 font-medium text-[10px] bg-red-50 p-1.5 rounded">
+                              🚨 {ind}
+                            </p>
+                          ))}
+                        </div>
+                      )}
                     </td>
                     <td className="px-5 py-3.5">
-                      <span className={`text-xs font-semibold px-2.5 py-1 rounded-full
-                        ${d.disetujui
-                          ? 'bg-green-100 text-green-700'
-                          : 'bg-orange-100 text-orange-700'}`}>
-                        {d.disetujui ? 'Disetujui' : 'Pending'}
-                      </span>
+                      <div className="flex flex-col gap-1.5 items-start">
+                        <span className={`text-xs font-semibold px-2.5 py-1 rounded-full
+                          ${d.disetujui
+                            ? 'bg-green-100 text-green-700'
+                            : 'bg-orange-100 text-orange-700'}`}>
+                          {d.disetujui ? 'Disetujui' : 'Pending'}
+                        </span>
+                        {d.isSuspicious && (
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-red-100 text-red-700 uppercase tracking-wide border border-red-200">
+                            ⚠️ Anomali
+                          </span>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}
