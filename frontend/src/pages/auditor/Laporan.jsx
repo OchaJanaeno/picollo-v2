@@ -124,7 +124,7 @@ export default function AuditorLaporan() {
                 {['harian', 'bulanan', 'tahunan'].map(p => (
                   <button key={p} onClick={() => setPeriod(p)}
                     className={`px-3 py-1.5 rounded-lg text-xs font-semibold capitalize transition-all border
-                  ${period === p ? 'bg-red-800 text-white border-red-800' : 'bg-white text-zinc-600 border-zinc-200 hover:border-red-300'}`}>
+                  ${period === p ? 'bg-yellow-400 text-zinc-900 border-yellow-400' : 'bg-white text-zinc-600 border-zinc-200 hover:border-yellow-300'}`}>
                     {p}
                   </button>
                 ))}

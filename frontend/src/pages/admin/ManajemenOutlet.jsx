@@ -104,14 +104,14 @@ function ModalTambah({ onClose, onSave }) {
             <textarea value={form.alamat} onChange={e => setField('alamat', e.target.value)}
               placeholder="Jl. Contoh No. 1" rows={3}
               className="w-full border border-zinc-300 rounded-xl px-4 py-2.5 text-sm
-                         focus:outline-none focus:border-red-800 transition-colors resize-none" />
+                         focus:outline-none focus:border-yellow-400 transition-colors resize-none" />
           </div>
           <div>
             <label className="text-zinc-700 text-sm font-semibold mb-1.5 block">Kota</label>
             <input type="text" value={form.kota} onChange={e => setField('kota', e.target.value)}
               placeholder="Contoh: Surabaya"
               className="w-full border border-zinc-300 rounded-xl px-4 py-2.5 text-sm
-                         focus:outline-none focus:border-red-800 transition-colors" />
+                         focus:outline-none focus:border-yellow-400 transition-colors" />
           </div>
         </div>
 
@@ -122,7 +122,7 @@ function ModalTambah({ onClose, onSave }) {
             Batal
           </button>
           <button onClick={handleSave} disabled={loading}
-            className="flex-1 bg-red-800 hover:bg-red-900 disabled:bg-red-900/50 text-white
+            className="flex-1 bg-yellow-400 hover:bg-yellow-500 disabled:bg-yellow-400/50 text-zinc-900
                        font-semibold py-2.5 rounded-xl text-sm transition-colors">
             {loading ? 'Menyimpan...' : 'Simpan Outlet'}
           </button>
@@ -195,14 +195,14 @@ function ModalEdit({ outlet, onClose, onUpdate }) {
             <textarea value={form.alamat} onChange={e => setField('alamat', e.target.value)}
               placeholder="Jl. Contoh No. 1" rows={3}
               className="w-full border border-zinc-300 rounded-xl px-4 py-2.5 text-sm
-                         focus:outline-none focus:border-red-800 transition-colors resize-none" />
+                         focus:outline-none focus:border-yellow-400 transition-colors resize-none" />
           </div>
           <div>
             <label className="text-zinc-700 text-sm font-semibold mb-1.5 block">Kota</label>
             <input type="text" value={form.kota} onChange={e => setField('kota', e.target.value)}
               placeholder="Contoh: Surabaya"
               className="w-full border border-zinc-300 rounded-xl px-4 py-2.5 text-sm
-                         focus:outline-none focus:border-red-800 transition-colors" />
+                         focus:outline-none focus:border-yellow-400 transition-colors" />
           </div>
         </div>
 
@@ -213,7 +213,7 @@ function ModalEdit({ outlet, onClose, onUpdate }) {
             Batal
           </button>
           <button onClick={handleSave} disabled={loading}
-            className="flex-1 bg-red-800 hover:bg-red-900 disabled:bg-red-900/50 text-white
+            className="flex-1 bg-yellow-400 hover:bg-yellow-500 disabled:bg-yellow-400/50 text-zinc-900
                        font-semibold py-2.5 rounded-xl text-sm transition-colors">
             {loading ? 'Menyimpan...' : 'Simpan Perubahan'}
           </button>
@@ -287,7 +287,7 @@ function ModalDetail({ outlet, onClose, onToggleStatus }) {
             className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition-colors border
               ${outlet.status === 'nonaktif'
                 ? 'border-green-300 text-green-700 hover:bg-green-50'
-                : 'border-red-300 text-red-700 hover:bg-red-50'}`}>
+                : 'border-red-300 text-red-700 hover:bg-yellow-50'}`}>
             {loading ? '...' : outlet.status === 'nonaktif' ? 'Aktifkan' : 'Nonaktifkan'}
           </button>
           <button onClick={onClose}
@@ -419,10 +419,10 @@ function ModalAturProduk({ outlet, onClose }) {
               {masterProducts.map(p => {
                 const sel = selection[p.id] || { selected: false, stok: 0 }
                 return (
-                  <div key={p.id} className={`border rounded-xl p-3 flex items-center gap-4 transition-colors ${sel.selected ? 'border-red-300 bg-red-50/20' : 'border-zinc-200 bg-white'}`}>
+                  <div key={p.id} className={`border rounded-xl p-3 flex items-center gap-4 transition-colors ${sel.selected ? 'border-yellow-300 bg-yellow-50/20' : 'border-zinc-200 bg-white'}`}>
                     {/* Toggle Button */}
                     <button onClick={() => toggleSelect(p.id)} className="shrink-0 outline-none">
-                      <div className={`w-10 h-6 rounded-full p-1 transition-colors ${sel.selected ? 'bg-red-600' : 'bg-zinc-300'}`}>
+                      <div className={`w-10 h-6 rounded-full p-1 transition-colors ${sel.selected ? 'bg-yellow-400' : 'bg-zinc-300'}`}>
                         <div className={`w-4 h-4 bg-white rounded-full transition-transform ${sel.selected ? 'translate-x-4' : 'translate-x-0'}`} />
                       </div>
                     </button>
@@ -456,7 +456,7 @@ function ModalAturProduk({ outlet, onClose }) {
                             value={sel.stok === 0 ? '' : sel.stok}
                             placeholder="0"
                             onChange={e => changeStok(p.id, e.target.value)}
-                            className="w-16 border border-zinc-300 rounded-lg px-2 py-1.5 text-xs font-mono focus:outline-none focus:border-red-600 text-center"
+                            className="w-16 border border-zinc-300 rounded-lg px-2 py-1.5 text-xs font-mono focus:outline-none focus:border-yellow-400 text-center"
                           />
                         </div>
                         <div className="flex items-center gap-1.5">
@@ -465,7 +465,7 @@ function ModalAturProduk({ outlet, onClose }) {
                             value={sel.harga}
                             placeholder={p.harga}
                             onChange={e => changeHarga(p.id, e.target.value)}
-                            className="w-20 border border-zinc-300 rounded-lg px-2 py-1.5 text-xs font-mono focus:outline-none focus:border-red-600 text-right"
+                            className="w-20 border border-zinc-300 rounded-lg px-2 py-1.5 text-xs font-mono focus:outline-none focus:border-yellow-400 text-right"
                           />
                         </div>
                         <div className="flex items-center gap-1.5">
@@ -474,7 +474,7 @@ function ModalAturProduk({ outlet, onClose }) {
                             value={sel.modal}
                             placeholder={p.modal || '-'}
                             onChange={e => changeModal(p.id, e.target.value)}
-                            className="w-20 border border-zinc-300 rounded-lg px-2 py-1.5 text-xs font-mono focus:outline-none focus:border-red-600 text-right"
+                            className="w-20 border border-zinc-300 rounded-lg px-2 py-1.5 text-xs font-mono focus:outline-none focus:border-yellow-400 text-right"
                           />
                         </div>
                       </div>
@@ -492,7 +492,7 @@ function ModalAturProduk({ outlet, onClose }) {
             Batal
           </button>
           <button onClick={handleSave} disabled={loading || saving}
-            className="flex-1 bg-red-800 hover:bg-red-900 disabled:bg-red-900/50 text-white font-semibold py-2.5 rounded-xl text-sm transition-colors">
+            className="flex-1 bg-yellow-400 hover:bg-yellow-500 disabled:bg-yellow-400/50 text-zinc-900 font-semibold py-2.5 rounded-xl text-sm transition-colors">
             {saving ? 'Menyimpan...' : 'Simpan Pengaturan'}
           </button>
         </div>
@@ -609,9 +609,9 @@ export default function AdminOutlet() {
             <p className="text-zinc-500 text-sm mt-0.5">Kelola semua outlet bisnis Anda</p>
           </div>
           <button onClick={() => setShowTambah(true)}
-            className="flex items-center gap-2 bg-red-800 hover:bg-red-900 text-white
+            className="flex items-center gap-2 bg-yellow-400 hover:bg-yellow-500 text-zinc-900
                        font-semibold px-4 py-2.5 rounded-xl text-sm transition-colors
-                       self-start sm:self-auto shadow-lg shadow-red-900/20">
+                       self-start sm:self-auto shadow-lg shadow-yellow-500/20">
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
             </svg>
@@ -646,15 +646,15 @@ export default function AdminOutlet() {
               <input type="text" value={search} onChange={e => setSearch(e.target.value)}
                 placeholder="Cari nama atau alamat outlet..."
                 className="w-full border border-zinc-300 rounded-xl pl-10 pr-4 py-2.5 text-sm
-                           focus:outline-none focus:border-red-800 transition-colors" />
+                           focus:outline-none focus:border-yellow-400 transition-colors" />
             </div>
             <div className="flex gap-2 flex-wrap">
               {['semua', 'aktif', 'warning', 'nonaktif'].map(f => (
                 <button key={f} onClick={() => setFilter(f)}
                   className={`px-3 py-2 rounded-xl text-xs font-semibold capitalize transition-all border
                     ${filterStatus === f
-                      ? 'bg-red-800 text-white border-red-800'
-                      : 'bg-white text-zinc-600 border-zinc-200 hover:border-red-300'}`}>
+                      ? 'bg-yellow-400 text-zinc-900 border-yellow-400'
+                      : 'bg-white text-zinc-600 border-zinc-200 hover:border-yellow-300'}`}>
                   {f}
                 </button>
               ))}
@@ -671,12 +671,12 @@ export default function AdminOutlet() {
               : filtered.map(outlet => (
                 <div key={outlet.id}
                   className="bg-white rounded-2xl border border-zinc-200 p-5
-                             hover:border-red-200 hover:shadow-md transition-all cursor-pointer"
+                             hover:border-yellow-200 hover:shadow-md transition-all cursor-pointer"
                   onClick={() => setDetail(outlet)}>
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-red-900/10 rounded-xl flex items-center justify-center shrink-0">
-                        <svg className="w-5 h-5 text-red-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <div className="w-10 h-10 bg-yellow-400/20 rounded-xl flex items-center justify-center shrink-0">
+                        <svg className="w-5 h-5 text-yellow-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                             d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                         </svg>

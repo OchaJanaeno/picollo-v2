@@ -66,7 +66,7 @@ function ModalKoreksi({ transaksi, onClose, onSuccess }) {
             <div>
               <label className="block text-zinc-700 text-xs font-bold mb-1.5 uppercase tracking-wide">Metode Pembayaran</label>
               <select value={metode} onChange={e => setMetode(e.target.value)}
-                className="w-full border border-zinc-200 bg-zinc-50/50 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-red-800 focus:bg-white transition-all appearance-none cursor-pointer">
+                className="w-full border border-zinc-200 bg-zinc-50/50 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-yellow-400 focus:bg-white transition-all appearance-none cursor-pointer">
                 <option value="qris">QRIS</option>
                 <option value="tunai">Tunai</option>
                 <option value="transfer">Transfer</option>
@@ -75,19 +75,19 @@ function ModalKoreksi({ transaksi, onClose, onSuccess }) {
             <div>
               <label className="block text-zinc-700 text-xs font-bold mb-1.5 uppercase tracking-wide">Ref Pembayaran <span className="text-zinc-400 font-normal">(Opsional)</span></label>
               <input type="text" value={ref} onChange={e => setRef(e.target.value)}
-                className="w-full border border-zinc-200 bg-zinc-50/50 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-red-800 focus:bg-white transition-all"
+                className="w-full border border-zinc-200 bg-zinc-50/50 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-yellow-400 focus:bg-white transition-all"
                 placeholder="Contoh: REF-12345" />
             </div>
             <div>
               <label className="block text-zinc-700 text-xs font-bold mb-1.5 uppercase tracking-wide">Catatan <span className="text-zinc-400 font-normal">(Opsional)</span></label>
               <input type="text" value={catatan} onChange={e => setCatatan(e.target.value)}
-                className="w-full border border-zinc-200 bg-zinc-50/50 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-red-800 focus:bg-white transition-all"
+                className="w-full border border-zinc-200 bg-zinc-50/50 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-yellow-400 focus:bg-white transition-all"
                 placeholder="Contoh: Salah pilih metode" />
             </div>
             <div>
               <label className="block text-zinc-700 text-xs font-bold mb-1.5 uppercase tracking-wide">Alasan Koreksi <span className="text-red-500">*</span></label>
               <textarea value={alasan} onChange={e => setAlasan(e.target.value)}
-                className="w-full border border-zinc-200 bg-zinc-50/50 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-red-800 focus:bg-white transition-all min-h-[100px] resize-none"
+                className="w-full border border-zinc-200 bg-zinc-50/50 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-yellow-400 focus:bg-white transition-all min-h-[100px] resize-none"
                 placeholder="Jelaskan secara detail alasan melakukan koreksi..." required />
             </div>
           </div>
@@ -98,7 +98,7 @@ function ModalKoreksi({ transaksi, onClose, onSuccess }) {
               Batal
             </button>
             <button type="submit" disabled={loading}
-              className="flex-1 bg-red-800 hover:bg-red-900 disabled:bg-zinc-300 disabled:text-zinc-500 text-white font-bold py-3.5 rounded-xl text-sm transition-colors shadow-lg shadow-red-900/20">
+              className="flex-1 bg-yellow-400 hover:bg-yellow-500 disabled:bg-zinc-300 disabled:text-zinc-500 text-zinc-900 font-bold py-3.5 rounded-xl text-sm transition-colors shadow-lg shadow-yellow-500/20">
               {loading ? 'Mengirim...' : 'Kirim Pengajuan'}
             </button>
           </div>
@@ -133,7 +133,7 @@ function ModalKonfirmasiKirim({ onClose, onConfirm, loading }) {
               Batal
             </button>
             <button type="button" onClick={onConfirm} disabled={loading}
-              className="flex-1 bg-red-800 hover:bg-red-900 disabled:bg-zinc-300 disabled:text-zinc-500 text-white font-bold py-3.5 rounded-xl text-sm transition-colors shadow-lg shadow-red-900/20">
+              className="flex-1 bg-yellow-400 hover:bg-yellow-500 disabled:bg-zinc-300 disabled:text-zinc-500 text-zinc-900 font-bold py-3.5 rounded-xl text-sm transition-colors shadow-lg shadow-yellow-500/20">
               {loading ? 'Mengirim...' : 'Kirim Laporan'}
             </button>
           </div>
@@ -255,7 +255,7 @@ export default function KasirRekapHarian() {
           </div>
           <button onClick={() => setShowConfirmKirim(true)} disabled={sending || sent || !data}
             className={`flex items-center gap-2 px-6 py-3 rounded-2xl text-sm font-bold transition-all shadow-xl
-              ${sent ? 'bg-green-500 text-white shadow-green-500/20' : 'bg-red-800 hover:bg-red-900 shadow-red-900/20 disabled:bg-zinc-200 disabled:text-zinc-400 disabled:shadow-none text-white'}`}>
+              ${sent ? 'bg-green-500 text-white shadow-green-500/20' : 'bg-yellow-400 hover:bg-yellow-500 shadow-yellow-500/20 disabled:bg-zinc-200 disabled:text-zinc-400 disabled:shadow-none text-zinc-900'}`}>
             {sent ? (
               <>
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" /></svg>
@@ -284,7 +284,7 @@ export default function KasirRekapHarian() {
           <>
             <div className="grid grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4">
               {[
-                { label: 'Total Transaksi', val: data.total_transaksi, color: 'bg-red-800' },
+                { label: 'Total Transaksi', val: data.total_transaksi, color: 'bg-yellow-400' },
                 { label: 'Total Omzet',     val: data.total_omzet,     color: 'bg-zinc-800' },
                 { label: 'QRIS',            val: data.total_qris,      color: 'bg-zinc-700' },
                 { label: 'Tunai',           val: data.total_tunai,     color: 'bg-zinc-600' },
@@ -325,7 +325,7 @@ export default function KasirRekapHarian() {
               <div className="px-6 py-5 border-b border-zinc-100 flex items-center justify-between bg-zinc-50/50">
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-xl bg-red-100 flex items-center justify-center">
-                    <svg className="w-4 h-4 text-red-800" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" /></svg>
+                    <svg className="w-4 h-4 text-yellow-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" /></svg>
                   </div>
                   <h3 className="font-bold text-zinc-900">Rincian Transaksi</h3>
                 </div>
@@ -345,7 +345,7 @@ export default function KasirRekapHarian() {
                     ) : (data.transaksi || []).map(tx => (
                       <tr key={tx.id} className="hover:bg-zinc-50/80 transition-colors group">
                         <td className="px-6 py-4">
-                          <p className="text-sm font-bold font-mono text-zinc-900 group-hover:text-red-800 transition-colors">{tx.id}</p>
+                          <p className="text-sm font-bold font-mono text-zinc-900 group-hover:text-yellow-600 transition-colors">{tx.id}</p>
                           <p className="text-xs text-zinc-500 mt-0.5">{tx.waktu}</p>
                         </td>
                         <td className="px-6 py-4">
@@ -373,7 +373,7 @@ export default function KasirRekapHarian() {
                         <td className="px-6 py-4">
                           {tx.status !== 'voided' && (
                             <button onClick={() => setSelectedKoreksi(tx)}
-                              className="inline-flex items-center gap-1.5 text-xs bg-white border border-zinc-200 hover:border-red-300 hover:bg-red-50 text-zinc-700 hover:text-red-800 font-bold px-4 py-2 rounded-xl transition-all shadow-sm">
+                              className="inline-flex items-center gap-1.5 text-xs bg-white border border-zinc-200 hover:border-yellow-300 hover:bg-yellow-50 text-zinc-700 hover:text-yellow-600 font-bold px-4 py-2 rounded-xl transition-all shadow-sm">
                               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
                               Koreksi
                             </button>

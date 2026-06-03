@@ -67,7 +67,7 @@ export default function AuditorDashboard() {
   const statCards = [
     { label: 'Total Transaksi', value: stats?.total_transaksi ?? '-', color: 'bg-zinc-800' },
     { label: 'Transaksi Valid', value: stats?.total_verified ?? '-', color: 'bg-green-700' },
-    { label: 'Fraud / Anomali', value: stats?.total_fraud ?? '-', color: 'bg-red-800' },
+    { label: 'Fraud / Anomali', value: stats?.total_fraud ?? '-', color: 'bg-yellow-400' },
     { label: 'Omzet Hari Ini', value: formatRupiah(keuangan.omzet), color: 'bg-amber-700' },
   ]
 
@@ -124,7 +124,7 @@ export default function AuditorDashboard() {
           <div className="bg-white rounded-2xl border border-zinc-200 overflow-hidden shadow-sm">
             <div className="flex items-center justify-between px-5 py-4 border-b border-zinc-100 bg-zinc-50/50">
               <h3 className="font-bold text-zinc-900 text-sm">Riwayat Verifikasi Terbaru</h3>
-              <a href="/auditor/verifikasi" className="text-red-800 text-xs font-semibold hover:underline flex items-center gap-1">
+              <a href="/auditor/verifikasi" className="text-yellow-600 text-xs font-semibold hover:underline flex items-center gap-1">
                 Selengkapnya
               </a>
             </div>
@@ -141,7 +141,7 @@ export default function AuditorDashboard() {
                       <p className="text-xs text-zinc-400 mt-0.5">{v.waktu}</p>
                     </div>
                     <span className={`text-[10px] uppercase tracking-wider font-bold px-2 py-1 rounded-md shrink-0 ml-2
-                      ${v.status === 'verified' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                      ${v.status === 'verified' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
                       {v.status}
                     </span>
                   </div>

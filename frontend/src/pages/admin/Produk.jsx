@@ -397,7 +397,7 @@ export default function AdminProduk() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
-            <h2 className="text-xl sm:text-2xl font-bold text-zinc-900">Master Katalog Produk</h2>
+            <h2 className="text-xl sm:text-2xl font-bold text-zinc-900">Produk</h2>
             <p className="text-zinc-500 text-sm mt-0.5">
               Kelola daftar semua produk. Untuk mengaktifkan dan mengatur stok, pergi ke menu Manajemen Outlet.
             </p>

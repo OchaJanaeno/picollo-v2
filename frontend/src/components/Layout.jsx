@@ -75,7 +75,6 @@ function useClickOutside(ref, handler) {
   }, [ref, handler])
 }
 
-// Helper ambil nama dari user object (Laravel kirim 'name', kita simpan bisa 'name' atau 'nama')
 function getUserName(user) {
   return user?.name || user?.nama || '-'
 }
@@ -85,16 +84,15 @@ function Avatar({ foto, user, size = 'sm' }) {
   const label = getUserName(user)[0]?.toUpperCase() || 'U'
   return foto
     ? <img src={foto || user?.avatar_url} alt="profil"
-        className={`${dim} rounded-full object-cover border-2 border-red-700`}/>
-    : <div className={`${dim} bg-red-800 rounded-full flex items-center justify-center shrink-0`}>
-        <span className="text-white font-bold">{label}</span>
+        className={`${dim} rounded-full object-cover border-2 border-yellow-400`}/>
+    : <div className={`${dim} bg-yellow-400 rounded-full flex items-center justify-center shrink-0`}>
+        <span className="text-zinc-900 font-bold">{label}</span>
       </div>
 }
 
 function SidebarContent({ nav, collapsed, onClose }) {
   const navigate             = useNavigate()
   const { user, logout, outlets, activeOutletId, setActiveOutletId } = useAuthStore()
-  // ── FIX: role dari user.role karena store tidak punya role terpisah ──
   const role                 = user?.role
   const handleLogout         = () => { logout(); navigate('/login') }
   const displayName          = getUserName(user)
@@ -115,7 +113,7 @@ function SidebarContent({ nav, collapsed, onClose }) {
               }}/>
             <div className="w-8 h-8 rounded-xl bg-white items-center justify-center"
               style={{ display: 'none' }}>
-              <span className="text-red-800 font-black text-sm">P</span>
+              <span className="text-yellow-500 font-black text-sm">P</span>
             </div>
           </Link>
         ) : (
@@ -158,7 +156,7 @@ function SidebarContent({ nav, collapsed, onClose }) {
             <select 
               value={activeOutletId}
               onChange={(e) => setActiveOutletId(e.target.value)}
-              className="w-full bg-zinc-800 text-zinc-300 text-xs font-semibold rounded-xl pl-3 pr-8 py-2.5 border border-zinc-700/50 focus:outline-none focus:border-red-500/50 appearance-none cursor-pointer hover:bg-zinc-700/50 transition-colors"
+              className="w-full bg-zinc-800 text-zinc-300 text-xs font-semibold rounded-xl pl-3 pr-8 py-2.5 border border-zinc-700/50 focus:outline-none focus:border-yellow-400/50 appearance-none cursor-pointer hover:bg-zinc-700/50 transition-colors"
             >
               <option value="">Semua Outlet ({outlets.length})</option>
               {outlets.map(o => (
@@ -189,7 +187,7 @@ function SidebarContent({ nav, collapsed, onClose }) {
                     `flex items-center gap-3 rounded-xl text-sm font-medium transition-all
                     ${collapsed ? 'px-0 py-2.5 justify-center' : 'px-3 py-2.5'}
                     ${isActive
-                      ? 'bg-red-800 text-white shadow-lg shadow-red-900/30'
+                      ? 'bg-yellow-400 text-zinc-900 shadow-lg shadow-yellow-500/20'
                       : 'text-zinc-400 hover:text-white hover:bg-zinc-800'}`}>
                   <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={item.icon}/>
@@ -215,7 +213,7 @@ function SidebarContent({ nav, collapsed, onClose }) {
         )}
         <button onClick={handleLogout} title={collapsed ? 'Keluar' : undefined}
           className={`w-full flex items-center gap-3 rounded-xl text-sm font-medium
-                     text-zinc-400 hover:text-red-400 hover:bg-zinc-800 transition-all
+                     text-zinc-400 hover:text-yellow-400 hover:bg-zinc-800 transition-all
                      ${collapsed ? 'px-0 py-2.5 justify-center' : 'px-3 py-2.5'}`}>
           <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
@@ -235,11 +233,9 @@ export default function Layout({ children }) {
   const [profileOpen, setProfileOpen] = useState(false)
 
   const { user, logout, outlets }  = useAuthStore()
-  // ── FIX: role dari user.role ──
   const role               = user?.role
   const displayName        = getUserName(user)
   const navigate           = useNavigate()
-  // nav pakai role dari user.role, fallback admin
   const nav                = navConfig[role] || navConfig.admin
 
   const notifRef   = useRef(null)
@@ -320,8 +316,8 @@ export default function Layout({ children }) {
                 </div>
                 <button onClick={handleLogout}
                   className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium
-                             text-zinc-500 hover:text-red-700 hover:bg-red-50 transition-colors
-                             border border-zinc-200 hover:border-red-200">
+                             text-zinc-500 hover:text-yellow-600 hover:bg-yellow-50 transition-colors
+                             border border-zinc-200 hover:border-yellow-200">
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                       d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
@@ -374,9 +370,8 @@ export default function Layout({ children }) {
                             <p className="text-sm font-bold text-zinc-900 truncate">
                               {displayName}
                             </p>
-                            {/* ── FIX: role badge selalu muncul ── */}
                             {role && (
-                              <span className="text-xs bg-red-100 text-red-800 font-semibold
+                              <span className="text-xs bg-yellow-100 text-yellow-800 font-semibold
                                                px-2 py-0.5 rounded-full capitalize">
                                 {role}
                               </span>
@@ -409,7 +404,7 @@ export default function Layout({ children }) {
                       <div className="p-2 border-t border-zinc-100">
                         <button onClick={handleLogout}
                           className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl
-                                     text-sm font-medium text-red-600 hover:bg-red-50 transition-colors">
+                                     text-sm font-medium text-yellow-600 hover:bg-yellow-50 transition-colors">
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                               d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>

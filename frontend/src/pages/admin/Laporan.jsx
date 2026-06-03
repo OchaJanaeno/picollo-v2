@@ -105,7 +105,7 @@ export default function AdminLaporan() {
             <select
               value={selectedOutlet}
               onChange={e => setSelectedOutlet(e.target.value)}
-              className="bg-white border border-zinc-200 text-zinc-700 text-sm font-semibold rounded-xl px-4 py-2 focus:outline-none focus:border-red-800 transition-colors shadow-sm"
+              className="bg-white border border-zinc-200 text-zinc-700 text-sm font-semibold rounded-xl px-4 py-2 focus:outline-none focus:border-yellow-400 transition-colors shadow-sm"
             >
               <option value="">Semua Outlet</option>
               {outlets?.map(o => (
@@ -134,7 +134,7 @@ export default function AdminLaporan() {
                 {['harian', 'bulanan', 'tahunan'].map(p => (
                   <button key={p} onClick={() => setPeriod(p)}
                     className={`px-3 py-1.5 rounded-lg text-xs font-semibold capitalize transition-all border
-                  ${period === p ? 'bg-red-800 text-white border-red-800' : 'bg-white text-zinc-600 border-zinc-200 hover:border-red-300'}`}>
+                  ${period === p ? 'bg-yellow-400 text-zinc-900 border-yellow-400' : 'bg-white text-zinc-600 border-zinc-200 hover:border-yellow-300'}`}>
                     {p}
                   </button>
                 ))}
@@ -360,7 +360,7 @@ function TabRekapKasir({ selectedOutlet }) {
                           <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold bg-orange-50 text-orange-700 border border-orange-200">
                             <div className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse" /> Menunggu
                           </span>
-                          <button onClick={() => handleApprove(r.id)} className="bg-red-800 hover:bg-red-900 text-white text-xs font-bold px-3 py-1.5 rounded-xl shadow-sm transition-colors w-full text-left">
+                          <button onClick={() => handleApprove(r.id)} className="bg-yellow-400 hover:bg-yellow-500 text-zinc-900 text-xs font-bold px-3 py-1.5 rounded-xl shadow-sm transition-colors w-full text-left">
                             Setuju
                           </button>
                         </div>
