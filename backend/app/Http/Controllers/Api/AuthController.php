@@ -15,6 +15,7 @@ use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Validation\Rules\Password as PasswordRule;
 use Tymon\JWTAuth\Facades\JWTAuth;
 use Tymon\JWTAuth\Exceptions\JWTException;
+use App\Models\AuditLog;
 
 class AuthController extends Controller
 {
@@ -122,6 +123,16 @@ class AuthController extends Controller
         $user = JWTAuth::user();
         $user->update(['last_login_at' => now()]);
 
+        // Log login activity
+        AuditLog::create([
+            'user_id' => $user->id,
+            'action' => 'login',
+            'entity_type' => 'session',
+            'entity_id' => $user->id,
+            'ip_address' => $request->ip(),
+            'user_agent' => $request->userAgent(),
+        ]);
+
         return response()->json([
             'success' => true,
             'message' => 'Login berhasil!',
@@ -140,9 +151,22 @@ class AuthController extends Controller
     }
 
     // LOGOUT
-    public function logout()
+    public function logout(Request $request)
     {
         try {
+            $user = JWTAuth::user();
+            if ($user) {
+                // Log logout activity
+                AuditLog::create([
+                    'user_id' => $user->id,
+                    'action' => 'logout',
+                    'entity_type' => 'session',
+                    'entity_id' => $user->id,
+                    'ip_address' => $request->ip(),
+                    'user_agent' => $request->userAgent(),
+                ]);
+            }
+
             JWTAuth::invalidate(JWTAuth::getToken());
             return response()->json([
                 'success' => true,

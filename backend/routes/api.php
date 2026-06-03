@@ -63,11 +63,11 @@ Route::middleware('auth:api')->group(function () {
         Route::get('/transactions/{id}',                    [TransactionController::class, 'show']);
         Route::get('/daily-recaps',                         [DailyRecapController::class, 'index']);
         Route::get('/daily-recaps/{id}',                    [DailyRecapController::class, 'show']);
+        Route::get('/reports',                              [ReportController::class, 'index']);
     });
 
     // Admin & Auditor (Access to audits, reports, cashier list, and correction logs list)
     Route::middleware('role:admin|auditor')->group(function () {
-        Route::get('/reports',                              [ReportController::class, 'index']);
         Route::get('/reports/export-pdf',                   [ReportController::class, 'exportPdf']);
         Route::get('/hash-verifications',                   [HashVerificationController::class, 'index']);
         Route::get('/hash-verifications/{id}',              [HashVerificationController::class, 'show']);
@@ -77,5 +77,6 @@ Route::middleware('auth:api')->group(function () {
         Route::get('/correction-logs',                      [CorrectionLogController::class, 'index']);
         Route::get('/kasir',                                [KasirController::class, 'index']);
         Route::get('/kasir/{id}',                           [KasirController::class, 'show']);
+        Route::get('/kasir/{id}/aktivitas',                 [KasirController::class, 'getActivities']);
     });
 });

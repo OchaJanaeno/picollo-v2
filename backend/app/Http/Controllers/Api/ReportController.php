@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Transaction;
+use App\Models\TransactionItem;
+use App\Models\CorrectionLog;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -17,20 +19,34 @@ class ReportController extends Controller
      */
     private function getBaseTransactionQuery(Request $request)
     {
-        $outletIds = $request->user()->outlets()->pluck('outlets.id');
+        $user = $request->user();
+        $outletIds = $user->outlets()->pluck('outlets.id');
 
         // Filter ke outlet spesifik jika diminta dan user punya akses
         if ($request->outlet_id && $outletIds->contains($request->outlet_id)) {
             $outletIds = collect([$request->outlet_id]);
         }
 
-        return Transaction::whereIn('outlet_id', $outletIds)
+        $query = Transaction::whereIn('outlet_id', $outletIds)
             ->where('status', 'success')
             ->whereBetween('created_at', [
                 $request->start_date . ' 00:00:00',
                 $request->end_date   . ' 23:59:59',
-            ])
-            ->with(['outlet:id,nama', 'kasir:id,name'])
+            ]);
+
+        // Restriksi untuk Kasir: hanya melihat transaksi buatannya sendiri
+        if ($user->hasRole('kasir')) {
+            $query->where('user_id', $user->id);
+            // Paksa rentang tanggal ke hari ini saja untuk kasir
+            // agar mereka tidak bisa mengintip laporan hari lain
+            $today = Carbon::today()->format('Y-m-d');
+            $query->whereBetween('created_at', [
+                $today . ' 00:00:00',
+                $today . ' 23:59:59',
+            ]);
+        }
+
+        return $query->with(['outlet:id,nama', 'kasir:id,name'])
             ->orderBy('created_at');
     }
 
@@ -71,6 +87,74 @@ class ReportController extends Controller
                 'jumlah'  => $items->count(),
             ])->values();
 
+        $transactionIds = $transaksi->pluck('id');
+        
+        $topProducts = TransactionItem::join('transactions', 'transaction_items.transaction_id', '=', 'transactions.id')
+            ->join('outlets', 'transactions.outlet_id', '=', 'outlets.id')
+            ->whereIn('transactions.id', $transactionIds)
+            ->selectRaw('transaction_items.product_id, MAX(transaction_items.nama_produk) as nama, outlets.nama as outlet, SUM(transaction_items.qty) as terjual, SUM(transaction_items.subtotal) as omzet')
+            ->groupBy('transaction_items.product_id', 'transactions.outlet_id', 'outlets.nama')
+            ->orderByDesc('terjual')
+            ->limit(10)
+            ->get()
+            ->map(function ($item) {
+                return [
+                    'nama' => $item->nama,
+                    'outlet' => $item->outlet,
+                    'terjual' => (int) $item->terjual,
+                    'omzet' => (float) $item->omzet,
+                ];
+            });
+
+        // Hitung Transaksi & Koreksi per jam (00:00 - 23:59)
+        $aktivitasPerJam = [];
+        for ($i = 0; $i < 24; $i++) {
+            $hourString = str_pad($i, 2, '0', STR_PAD_LEFT) . ':00';
+            $aktivitasPerJam[$hourString] = [
+                'jam'       => $hourString,
+                'transaksi' => 0,
+                'koreksi'   => 0
+            ];
+        }
+
+        // Hitung total transaksi di setiap jam
+        foreach ($transaksi as $tx) {
+            $hour = $tx->created_at->format('H:00');
+            if (isset($aktivitasPerJam[$hour])) {
+                $aktivitasPerJam[$hour]['transaksi']++;
+            }
+        }
+
+        // Ambil Correction Logs di rentang waktu yang sama untuk outlet tsb
+        $user = $request->user();
+        $outletIds = $user->outlets()->pluck('outlets.id');
+        if ($request->outlet_id && $outletIds->contains($request->outlet_id)) {
+            $outletIds = collect([$request->outlet_id]);
+        }
+        
+        $koreksiQuery = CorrectionLog::whereIn('outlet_id', $outletIds)
+            ->whereBetween('created_at', [
+                $request->start_date . ' 00:00:00',
+                $request->end_date   . ' 23:59:59',
+            ]);
+            
+        if ($user->hasRole('kasir')) {
+            $koreksiQuery->where('corrected_by', $user->id);
+            $today = Carbon::today()->format('Y-m-d');
+            $koreksiQuery->whereBetween('created_at', [
+                $today . ' 00:00:00',
+                $today . ' 23:59:59',
+            ]);
+        }
+
+        $logs = $koreksiQuery->get();
+        foreach ($logs as $log) {
+            $hour = $log->created_at->format('H:00');
+            if (isset($aktivitasPerJam[$hour])) {
+                $aktivitasPerJam[$hour]['koreksi']++;
+            }
+        }
+
         return response()->json([
             'success' => true,
             'data'    => [
@@ -78,6 +162,8 @@ class ReportController extends Controller
                 'ringkasan'  => $ringkasan,
                 'per_outlet' => $perOutlet,
                 'per_hari'   => $perHari,
+                'produk_terlaris' => $topProducts,
+                'aktivitas_per_jam' => array_values($aktivitasPerJam),
             ],
         ]);
     }

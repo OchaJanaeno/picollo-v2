@@ -1,19 +1,21 @@
 import { useState, useEffect } from 'react'
 import Layout from '../../components/Layout'
 import { logKoreksiService } from '../../services/logKoreksiService'
+import useAuthStore from '../../store/authStore'
 
 export default function AuditorLogKoreksi() {
+  const { activeOutletId } = useAuthStore()
   const [data, setData]       = useState([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch]   = useState('')
   const [filterTipe, setFilterTipe] = useState('semua')
 
-  useEffect(() => { fetchData() }, [])
+  useEffect(() => { fetchData() }, [activeOutletId])
 
   const fetchData = async () => {
     setLoading(true)
     try {
-      const res = await logKoreksiService.getAll({ all: true })
+      const res = await logKoreksiService.getAll({ all: true, outlet_id: activeOutletId })
       const raw = res.data.data?.data || res.data.data || []
       const mapped = raw.map(l => ({
         id: l.id,

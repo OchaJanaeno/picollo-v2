@@ -13,7 +13,7 @@ function ModalBuatAuditor({ outlets, onClose, onSave }) {
     email: '',
     password: '',
     instansi: '', // Nama KAP / perusahaan auditor
-    outlet_id: '',
+    outlet_ids: [],
   })
   const [foto, setFoto]             = useState(null)
   const [fotoPreview, setFotoPreview] = useState(null)
@@ -50,7 +50,7 @@ function ModalBuatAuditor({ outlets, onClose, onSave }) {
     else if (!/^[A-Za-z\s]+$/.test(form.nama)) e.nama = 'Nama hanya boleh huruf'
     if (!form.email)   e.email   = 'Email tidak boleh kosong'
     if (!form.instansi) e.instansi = 'Nama instansi tidak boleh kosong'
-    if (!form.outlet_id) e.outlet_id = 'Pilih outlet untuk auditor ini'
+    if (!form.outlet_ids || form.outlet_ids.length === 0) e.outlet_ids = 'Pilih minimal 1 outlet'
     if (!form.password || form.password.length < 8)
       e.password = 'Password minimal 8 karakter'
     return e
@@ -66,7 +66,7 @@ function ModalBuatAuditor({ outlets, onClose, onSave }) {
         email: form.email,
         password: form.password,
         password_confirmation: form.password,
-        outlet_id: parseInt(form.outlet_id),
+        outlet_ids: form.outlet_ids.map(id => parseInt(id)),
         instansi: form.instansi,
       }
       const res = await auditorService.create(payload)
@@ -75,7 +75,7 @@ function ModalBuatAuditor({ outlets, onClose, onSave }) {
         nama: res.data.data.name,
         email: res.data.data.email,
         instansi: res.data.data.instansi,
-        outlet: outlets.find(o => o.id == res.data.data.outlet_id)?.nama || '-',
+        outlet: outlets.filter(o => res.data.data.outlet_ids.includes(o.id)).map(o => o.nama).join(', ') || '-',
         bergabung: new Date().toLocaleDateString('id-ID'),
         status: 'aktif',
         password: form.password,
@@ -88,7 +88,7 @@ function ModalBuatAuditor({ outlets, onClose, onSave }) {
         if (apiErrors.name) formErrors.nama = apiErrors.name[0]
         if (apiErrors.email) formErrors.email = apiErrors.email[0]
         if (apiErrors.password) formErrors.password = apiErrors.password[0]
-        if (apiErrors.outlet_id) formErrors.outlet_id = apiErrors.outlet_id[0]
+        if (apiErrors.outlet_ids) formErrors.outlet_ids = apiErrors.outlet_ids[0]
         if (apiErrors.instansi) formErrors.instansi = apiErrors.instansi[0]
         setErrors(formErrors)
       } else {
@@ -230,14 +230,22 @@ function ModalBuatAuditor({ outlets, onClose, onSave }) {
           {/* Outlet */}
           <div>
             <label className="text-zinc-700 text-sm font-semibold mb-1.5 block">Assign ke Outlet</label>
-            <select value={form.outlet_id} onChange={e => set('outlet_id', e.target.value)}
-              className={inputCls('outlet_id') + ' bg-white'}>
-              <option value="">-- Pilih Outlet --</option>
+            <div className={`space-y-2 max-h-40 overflow-y-auto border p-3 rounded-xl ${errors.outlet_ids ? 'border-red-400 bg-red-50' : 'border-zinc-300'}`}>
               {outlets.map(o => (
-                <option key={o.id} value={o.id}>{o.nama}</option>
+                <label key={o.id} className="flex items-center gap-2 cursor-pointer hover:bg-zinc-50 p-1 rounded transition-colors">
+                  <input type="checkbox"
+                    checked={form.outlet_ids.includes(o.id)}
+                    onChange={(e) => {
+                      if (e.target.checked) set('outlet_ids', [...form.outlet_ids, o.id])
+                      else set('outlet_ids', form.outlet_ids.filter(id => id !== o.id))
+                    }}
+                    className="w-4 h-4 rounded border-zinc-300 text-red-800 focus:ring-red-800"
+                  />
+                  <span className="text-sm text-zinc-700">{o.nama}</span>
+                </label>
               ))}
-            </select>
-            {errors.outlet_id && <p className="text-xs text-red-500 mt-1">{errors.outlet_id}</p>}
+            </div>
+            {errors.outlet_ids && <p className="text-xs text-red-500 mt-1">{errors.outlet_ids}</p>}
           </div>
         </div>
 
@@ -335,6 +343,159 @@ function ModalKredensial({ auditor, onClose }) {
   )
 }
 
+// ── Modal Lihat & Edit Kredensial ──
+function ModalLihatKredensial({ auditor, outlets, onClose, onUpdate }) {
+  const [showPass, setShowPass] = useState(false)
+  const [copied, setCopied]     = useState(null)
+  
+  const [isEditing, setIsEditing] = useState(false)
+  const [nama, setNama]           = useState(auditor.nama || '')
+  const [outletIds, setOutletIds] = useState(auditor.outlet_ids || [])
+  const [fotoFile, setFotoFile]   = useState(null)
+  const [fotoPreview, setFotoPreview] = useState(auditor.foto || null)
+  const [loading, setLoading]     = useState(false)
+  const fileRef = useRef(null)
+
+  const copy = (text, field) => {
+    navigator.clipboard.writeText(text)
+    setCopied(field)
+    setTimeout(() => setCopied(null), 2000)
+  }
+
+  const handleFoto = (file) => {
+    if (!file || !file.type.startsWith('image/')) return
+    setFotoFile(file)
+    const reader = new FileReader()
+    reader.onload = e => setFotoPreview(e.target.result)
+    reader.readAsDataURL(file)
+  }
+
+  const handleSave = async () => {
+    setLoading(true)
+    try {
+      const fd = new FormData()
+      fd.append('name', nama)
+      outletIds.forEach(id => fd.append('outlet_ids[]', id))
+      if (fotoFile) fd.append('avatar', fotoFile)
+      
+      const res = await auditorService.update(auditor.id, fd)
+      const updated = res.data.data
+      onUpdate({
+        ...auditor,
+        nama: updated.name,
+        outlet_ids: updated.outlets.map(o => o.id),
+        outlet: updated.outlets.map(o => o.nama).join(', ') || '-',
+        foto: updated.avatar_url || auditor.foto,
+      })
+      setIsEditing(false)
+    } catch (err) {
+      alert('Gagal update profile: ' + (err.response?.data?.message || err.message))
+    } finally { setLoading(false) }
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl w-full max-w-sm shadow-2xl">
+        <div className="flex items-center justify-between px-6 py-5 border-b border-zinc-100">
+          <div>
+            <h3 className="font-bold text-zinc-900">Kredensial Auditor</h3>
+            <p className="text-zinc-400 text-xs mt-0.5">{auditor.nama} — {auditor.instansi}</p>
+          </div>
+          <div className="flex items-center gap-3">
+            <button onClick={() => setIsEditing(!isEditing)} className={`text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors ${isEditing ? 'bg-red-100 text-red-700' : 'bg-zinc-100 text-zinc-700 hover:bg-zinc-200'}`}>
+              {isEditing ? 'Batal Edit' : 'Edit Profile'}
+            </button>
+            <button onClick={onClose} className="text-zinc-400 hover:text-zinc-700">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+        <div className="px-6 py-5">
+          {isEditing ? (
+            <div className="mb-5 space-y-4 bg-zinc-50 p-4 rounded-2xl border border-zinc-100">
+              <div className="flex items-center gap-4">
+                <div onClick={() => fileRef.current?.click()} className="w-14 h-14 rounded-full border-2 border-dashed border-zinc-300 flex items-center justify-center overflow-hidden cursor-pointer shrink-0">
+                  {fotoPreview ? <img src={fotoPreview} alt="preview" className="w-full h-full object-cover"/> : <span className="text-xs text-zinc-400">Foto</span>}
+                </div>
+                <div>
+                  <button onClick={() => fileRef.current?.click()} className="text-xs font-semibold text-red-800 hover:text-red-900">Ganti Foto</button>
+                  <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={e => handleFoto(e.target.files[0])}/>
+                </div>
+              </div>
+              <div>
+                <label className="text-zinc-700 text-xs font-bold mb-1.5 block">Nama Auditor</label>
+                <input type="text" value={nama} onChange={e => setNama(e.target.value)} className="w-full border border-zinc-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-red-800" />
+              </div>
+              <div>
+                <label className="text-zinc-700 text-xs font-bold mb-1.5 block">Assign ke Outlet</label>
+                <div className="space-y-2 max-h-40 overflow-y-auto border border-zinc-300 p-3 rounded-xl">
+                  {outlets.map(o => (
+                    <label key={o.id} className="flex items-center gap-2 cursor-pointer hover:bg-zinc-50 p-1 rounded transition-colors">
+                      <input type="checkbox"
+                        checked={outletIds.includes(o.id)}
+                        onChange={(e) => {
+                          if (e.target.checked) setOutletIds([...outletIds, o.id])
+                          else setOutletIds(outletIds.filter(id => id !== o.id))
+                        }}
+                        className="w-4 h-4 rounded border-zinc-300 text-red-800 focus:ring-red-800"
+                      />
+                      <span className="text-sm text-zinc-700">{o.nama}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+              <button onClick={handleSave} disabled={loading} className="w-full bg-red-800 hover:bg-red-900 text-white font-semibold py-2 rounded-xl text-sm mt-2">
+                {loading ? 'Menyimpan...' : 'Simpan Perubahan'}
+              </button>
+            </div>
+          ) : null}
+
+          <div className="bg-zinc-950 rounded-2xl p-5 space-y-3">
+            {[
+              { label: 'Email',    value: auditor.email, field: 'email', isPass: false },
+              { label: 'Password', value: auditor.password_plain || '(tidak tersimpan)', field: 'password', isPass: true },
+            ].map(item => (
+              <div key={item.label} className="flex items-center justify-between gap-3">
+                <div className="min-w-0 flex-1">
+                  <p className="text-zinc-500 text-xs">{item.label}</p>
+                  <p className="text-white text-sm font-mono font-bold">
+                    {item.isPass && !showPass
+                      ? '•'.repeat(Math.min((item.value || '').length, 12))
+                      : item.value}
+                  </p>
+                </div>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  {item.isPass && (
+                    <button onClick={() => setShowPass(!showPass)}
+                      className="text-zinc-400 hover:text-white transition-colors p-1">
+                      {showPass
+                        ? <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                        : <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"/></svg>
+                      }
+                    </button>
+                  )}
+                  <button onClick={() => copy(item.value, item.field)}
+                    className={`text-xs font-semibold px-3 py-1.5 rounded-lg transition-all
+                      ${copied === item.field ? 'bg-green-600 text-white' : 'bg-zinc-700 hover:bg-zinc-600 text-white'}`}>
+                    {copied === item.field ? '✓' : 'Salin'}
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 mt-4">
+            <p className="text-amber-700 text-xs">
+              ⚠️ Jaga kerahasiaan kredensial ini.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ── Halaman Utama Manajemen Auditor ──
 export default function ManajemenAuditor() {
   // State untuk data auditor
@@ -345,6 +506,7 @@ export default function ManajemenAuditor() {
   const [search, setSearch]     = useState('')
   const [showBuat, setShowBuat] = useState(false)
   const [newAuditor, setNewAuditor] = useState(null) // untuk modal kredensial
+  const [lihatKredensial, setLihatKredensial] = useState(null)
 
   // useEffect → fetch data saat komponen pertama mount
   useEffect(() => { fetchData() }, [])
@@ -362,9 +524,12 @@ export default function ManajemenAuditor() {
         nama: a.name,
         email: a.email,
         instansi: a.instansi || '-',
-        outlet: a.outlets?.[0]?.nama || '-',
+        outlet_ids: a.outlets?.map(o => o.id) || [],
+        outlet: a.outlets?.map(o => o.nama).join(', ') || '-',
         bergabung: a.created_at ? new Date(a.created_at).toLocaleDateString('id-ID') : '-',
         status: a.is_active ? 'aktif' : 'nonaktif',
+        password_plain: '',
+        foto: a.avatar_url,
       }))
       setData(mappedAuditors)
     } catch {
@@ -438,6 +603,14 @@ export default function ManajemenAuditor() {
         <ModalKredensial
           auditor={newAuditor}
           onClose={() => setNewAuditor(null)}
+        />
+      )}
+      {lihatKredensial && (
+        <ModalLihatKredensial auditor={lihatKredensial} outlets={outlets} onClose={() => setLihatKredensial(null)} 
+          onUpdate={(k) => {
+            setData(prev => prev.map(old => old.id === k.id ? k : old));
+            setLihatKredensial(k);
+          }}
         />
       )}
 
@@ -572,14 +745,28 @@ export default function ManajemenAuditor() {
                         </span>
                       </td>
                       <td className="px-5 py-3.5">
-                        <button onClick={() => handleToggle(a.id)}
-                          className={`text-xs font-semibold px-3 py-1.5 rounded-lg
-                                      transition-colors border
-                            ${a.status === 'aktif'
-                              ? 'border-red-200 text-red-700 hover:bg-red-50'
-                              : 'border-green-200 text-green-700 hover:bg-green-50'}`}>
-                          {a.status === 'aktif' ? 'Nonaktifkan' : 'Aktifkan'}
-                        </button>
+                        <div className="flex items-center gap-1.5">
+                          <button onClick={() => handleToggle(a.id)}
+                            className={`text-xs font-semibold px-3 py-1.5 rounded-lg
+                                        transition-colors border whitespace-nowrap
+                              ${a.status === 'aktif'
+                                ? 'border-red-200 text-red-700 hover:bg-red-50'
+                                : 'border-green-200 text-green-700 hover:bg-green-50'}`}>
+                            {a.status === 'aktif' ? 'Nonaktifkan' : 'Aktifkan'}
+                          </button>
+                          <button onClick={() => setLihatKredensial(a)}
+                            className="text-xs font-semibold px-2.5 py-1.5 rounded-lg border
+                                       border-zinc-200 text-zinc-600 hover:bg-zinc-50
+                                       transition-colors whitespace-nowrap flex items-center gap-1">
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                                d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                            </svg>
+                            Lihat Akun
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))

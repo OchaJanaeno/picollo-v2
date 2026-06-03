@@ -11,6 +11,7 @@ function ModalProduk({ data, outlets, onClose, onSave }) {
     nama: data?.nama || '',
     kategori: data?.kategori || '',
     harga: data?.harga || '',
+    modal: data?.modal || '',
     deskripsi: data?.deskripsi || '',
     status: data?.status || 'aktif',
   })
@@ -60,6 +61,7 @@ function ModalProduk({ data, outlets, onClose, onSave }) {
         nama: form.nama,
         kategori: form.kategori,
         harga: parseFloat(form.harga),
+        modal: form.modal ? parseFloat(form.modal) : null,
         is_active: form.status === 'aktif',
         deskripsi: form.deskripsi,
         foto: fotoPreview,
@@ -141,10 +143,10 @@ function ModalProduk({ data, outlets, onClose, onSave }) {
                 className={`border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer
                             transition-all duration-200
                             ${dragging
-                              ? 'border-red-400 bg-red-50 scale-[1.01]'
-                              : errors.foto
-                                ? 'border-red-300 bg-red-50'
-                                : 'border-zinc-300 hover:border-red-300 hover:bg-red-50/50'}`}>
+                    ? 'border-red-400 bg-red-50 scale-[1.01]'
+                    : errors.foto
+                      ? 'border-red-300 bg-red-50'
+                      : 'border-zinc-300 hover:border-red-300 hover:bg-red-50/50'}`}>
                 <div className={`w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3
                   ${dragging ? 'bg-red-100' : 'bg-zinc-100'}`}>
                   <svg className={`w-6 h-6 ${dragging ? 'text-red-500' : 'text-zinc-400'}`}
@@ -180,22 +182,25 @@ function ModalProduk({ data, outlets, onClose, onSave }) {
             {errors.nama && <p className="text-xs text-red-500 mt-1">{errors.nama}</p>}
           </div>
 
-          {/* ── Kategori & Harga ── */}
-          <div className="grid grid-cols-2 gap-3">
+          {/* ── Kategori, Harga & HPP ── */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
               <label className="text-zinc-700 text-sm font-semibold mb-1.5 block">Kategori</label>
               <input type="text" value={form.kategori} onChange={e => set('kategori', e.target.value)}
                 placeholder="Minuman / Makanan" className={inputCls('kategori')} />
             </div>
             <div>
-              <label className="text-zinc-700 text-sm font-semibold mb-1.5 block">Harga (Rp)</label>
+              <label className="text-zinc-700 text-sm font-semibold mb-1.5 block">Harga Jual (Rp)</label>
               <input type="number" value={form.harga} onChange={e => set('harga', e.target.value)}
                 placeholder="15000" className={inputCls('harga')} />
               {errors.harga && <p className="text-xs text-red-500 mt-1">{errors.harga}</p>}
             </div>
+            <div>
+              <label className="text-zinc-700 text-sm font-semibold mb-1.5 block">HPP / Modal (Rp)</label>
+              <input type="number" value={form.modal} onChange={e => set('modal', e.target.value)}
+                placeholder="10000" className={inputCls('modal')} />
+            </div>
           </div>
-
-
 
           {/* ── Deskripsi ── */}
           <div>
@@ -212,7 +217,7 @@ function ModalProduk({ data, outlets, onClose, onSave }) {
             <label className="text-zinc-700 text-sm font-semibold mb-2 block">Status</label>
             <div className="grid grid-cols-2 gap-2">
               {[
-                { val: 'aktif',    label: 'Aktif',    icon: '✓' },
+                { val: 'aktif', label: 'Aktif', icon: '✓' },
                 { val: 'nonaktif', label: 'Nonaktif', icon: '✕' },
               ].map(s => (
                 <button key={s.val} type="button" onClick={() => set('status', s.val)}
@@ -238,12 +243,12 @@ function ModalProduk({ data, outlets, onClose, onSave }) {
             className="flex-1 bg-red-800 hover:bg-red-900 disabled:bg-red-900/50 text-white font-semibold py-2.5 rounded-xl text-sm transition-colors">
             {loading
               ? <span className="flex items-center justify-center gap-2">
-                  <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
-                  </svg>
-                  Menyimpan...
-                </span>
+                <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                </svg>
+                Menyimpan...
+              </span>
               : data ? 'Simpan Perubahan' : 'Tambah Produk'
             }
           </button>
@@ -277,13 +282,14 @@ export default function AdminProduk() {
         nama: p.nama,
         kategori: p.kategori,
         harga: p.harga,
+        modal: p.modal,
         deskripsi: p.deskripsi || '',
         status: p.is_active ? 'aktif' : 'nonaktif',
         foto: p.gambar_url || null,
       }))
       setProduk(mapped)
-    } catch { 
-      setProduk([]) 
+    } catch {
+      setProduk([])
       setOutlets([])
     } finally { setLoading(false) }
   }
@@ -319,6 +325,7 @@ export default function AdminProduk() {
               nama: item.nama,
               kategori: item.kategori,
               harga: item.harga,
+              modal: item.modal,
               is_active: item.is_active,
               deskripsi: item.deskripsi,
               gambar_url: item.foto, // save the foto preview/url
@@ -330,6 +337,7 @@ export default function AdminProduk() {
                 nama: res.data.data.nama,
                 kategori: res.data.data.kategori,
                 harga: res.data.data.harga,
+                modal: res.data.data.modal,
                 deskripsi: res.data.data.deskripsi || '',
                 status: res.data.data.is_active ? 'aktif' : 'nonaktif',
                 outlets: res.data.data.outlets || [],
@@ -343,6 +351,7 @@ export default function AdminProduk() {
                 nama: res.data.data.nama,
                 kategori: res.data.data.kategori,
                 harga: res.data.data.harga,
+                modal: res.data.data.modal,
                 deskripsi: res.data.data.deskripsi || '',
                 status: res.data.data.is_active ? 'aktif' : 'nonaktif',
                 outlets: res.data.data.outlets || [],
@@ -406,9 +415,9 @@ export default function AdminProduk() {
         {/* Stats */}
         <div className="grid grid-cols-3 gap-3">
           {[
-            { label: 'Total Produk', val: produk.length,                                  color: 'bg-zinc-900' },
-            { label: 'Aktif',        val: produk.filter(p => p.status !== 'nonaktif').length, color: 'bg-green-700' },
-            { label: 'Nonaktif',     val: produk.filter(p => p.status === 'nonaktif').length, color: 'bg-zinc-500' },
+            { label: 'Total Produk', val: produk.length, color: 'bg-zinc-900' },
+            { label: 'Aktif', val: produk.filter(p => p.status !== 'nonaktif').length, color: 'bg-green-700' },
+            { label: 'Nonaktif', val: produk.filter(p => p.status === 'nonaktif').length, color: 'bg-zinc-500' },
           ].map(s => (
             <div key={s.label} className={`${s.color} rounded-2xl px-5 py-4 text-white`}>
               <p className="text-white/70 text-xs font-medium">{s.label}</p>
@@ -499,9 +508,16 @@ export default function AdminProduk() {
                 <div className="p-3.5">
                   <p className="font-bold text-zinc-900 text-sm truncate">{p.nama}</p>
                   <p className="text-zinc-400 text-xs mb-1.5">{p.kategori || 'Tanpa kategori'}</p>
-                  <p className="text-red-800 font-bold text-base mb-3">
-                    Rp {Number(p.harga).toLocaleString('id-ID')}
-                  </p>
+                  <div className="flex items-center gap-2 mb-3">
+                    <p className="text-red-800 font-bold text-base">
+                      Rp {Number(p.harga).toLocaleString('id-ID')}
+                    </p>
+                    {p.modal && (
+                      <p className="text-zinc-400 text-[10px] bg-zinc-100 px-1.5 py-0.5 rounded border border-zinc-200">
+                        HPP: Rp {Number(p.modal).toLocaleString('id-ID')}
+                      </p>
+                    )}
+                  </div>
                   {p.deskripsi && (
                     <p className="text-zinc-500 text-xs mb-3 line-clamp-2">{p.deskripsi}</p>
                   )}

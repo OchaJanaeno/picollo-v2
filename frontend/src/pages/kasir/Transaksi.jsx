@@ -428,31 +428,31 @@ export default function KasirTransaksi() {
     setTimeout(() => setToast(null), 2000)
   }
 
-  const addToKeranjang = (produk) => {
+  const addToKeranjang = (produk, force = false) => {
     setKeranjang(prev => {
       const ex = prev.find(k => k.id === produk.id)
       if (ex) {
-        if (ex.qty + 1 > produk.stok) {
+        if (!force && ex.qty + 1 > produk.stok) {
           showToast(`Stok tidak cukup!`)
           return prev
         }
         return prev.map(k => k.id === produk.id ? { ...k, qty: k.qty + 1 } : k)
       }
-      if (produk.stok < 1) {
+      if (!force && produk.stok < 1) {
         showToast(`Stok habis!`)
         return prev
       }
       return [...prev, { ...produk, qty: 1 }]
     })
-    if (produk.stok >= 1) showToast(`${produk.nama} ditambahkan`)
+    showToast(`${produk.nama} ditambahkan ${force ? '(Paksa)' : ''}`)
   }
 
-  const updateQty = (id, delta) => {
+  const updateQty = (id, delta, force = false) => {
     setKeranjang(prev => {
       return prev.map(k => {
         if (k.id === id) {
           const newQty = k.qty + delta
-          if (newQty > k.stok) {
+          if (!force && delta > 0 && newQty > k.stok) {
             showToast(`Stok tidak cukup!`)
             return k
           }
@@ -587,18 +587,26 @@ export default function KasirTransaksi() {
                           Rp {Number(produk.harga).toLocaleString('id-ID')}
                         </span>
                         <div className="flex flex-col items-end gap-1">
-                          <span className="text-zinc-500 text-xs font-semibold">Sisa: {produk.stok}</span>
-                          <button onClick={() => addToKeranjang(produk)}
-                            disabled={produk.stok <= 0}
-                            className="w-8 h-8 bg-red-800 hover:bg-red-900 disabled:bg-zinc-300 disabled:cursor-not-allowed rounded-full
-                                       flex items-center justify-center transition-colors
-                                       shadow-md shadow-red-900/20">
-                            <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor"
-                              viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                                d="M12 4v16m8-8H4" />
-                            </svg>
-                          </button>
+                          <span className={`text-xs font-semibold ${produk.stok <= 0 ? 'text-orange-500' : 'text-zinc-500'}`}>Sisa: {produk.stok}</span>
+                          <div className="flex gap-1.5 items-center">
+                            {produk.stok <= 0 && (
+                              <button onClick={() => addToKeranjang(produk, true)}
+                                className="px-2 py-1.5 bg-orange-100 hover:bg-orange-200 text-orange-700 text-[10px] font-bold rounded-lg transition-colors shadow-sm">
+                                Paksa
+                              </button>
+                            )}
+                            <button onClick={() => addToKeranjang(produk)}
+                              disabled={produk.stok <= 0}
+                              className="w-8 h-8 bg-red-800 hover:bg-red-900 disabled:bg-zinc-300 disabled:cursor-not-allowed rounded-full
+                                         flex items-center justify-center transition-colors
+                                         shadow-md shadow-red-900/20">
+                              <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor"
+                                viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                                  d="M12 4v16m8-8H4" />
+                              </svg>
+                            </button>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -687,12 +695,21 @@ export default function KasirTransaksi() {
                             <span className="text-zinc-900 font-bold text-sm w-5 text-center">
                               {item.qty}
                             </span>
-                            <button onClick={() => updateQty(item.id, 1)}
-                              className="w-6 h-6 bg-red-800 hover:bg-red-900 rounded-full
-                                         flex items-center justify-center text-white
-                                         font-bold text-sm transition-colors">
-                              +
-                            </button>
+                            {item.qty >= item.stok ? (
+                              <button onClick={() => updateQty(item.id, 1, true)}
+                                className="w-6 h-6 bg-orange-100 hover:bg-orange-200 rounded-full
+                                           flex items-center justify-center text-orange-700
+                                           font-bold text-sm transition-colors" title="Paksa Tambah">
+                                +
+                              </button>
+                            ) : (
+                              <button onClick={() => updateQty(item.id, 1)}
+                                className="w-6 h-6 bg-red-800 hover:bg-red-900 rounded-full
+                                           flex items-center justify-center text-white
+                                           font-bold text-sm transition-colors">
+                                +
+                              </button>
+                            )}
                           </div>
                           <span className="text-zinc-900 font-bold text-sm">
                             Rp {(item.harga * item.qty).toLocaleString('id-ID')}

@@ -6,14 +6,14 @@ import { outletService } from '../../services/outletService'
 const formatRupiah = (num) => {
   if (!num && num !== 0) return 'Rp 0'
   if (num >= 1000000) return `Rp ${(num / 1000000).toFixed(1)}jt`
-  if (num >= 1000)    return `Rp ${(num / 1000).toFixed(0)}rb`
+  if (num >= 1000) return `Rp ${(num / 1000).toFixed(0)}rb`
   return `Rp ${num.toLocaleString('id-ID')}`
 }
 
 function StatusBadge({ status }) {
   const map = {
-    aktif:    { label: 'Aktif',    cls: 'bg-green-100 text-green-700' },
-    warning:  { label: 'Warning',  cls: 'bg-orange-100 text-orange-700' },
+    aktif: { label: 'Aktif', cls: 'bg-green-100 text-green-700' },
+    warning: { label: 'Warning', cls: 'bg-orange-100 text-orange-700' },
     nonaktif: { label: 'Nonaktif', cls: 'bg-zinc-100 text-zinc-500' },
   }
   const s = map[status] || map.nonaktif
@@ -40,7 +40,7 @@ function EmptyState() {
 }
 
 function ModalTambah({ onClose, onSave }) {
-  const [form, setForm]     = useState({ nama: '', alamat: '', kota: '' })
+  const [form, setForm] = useState({ nama: '', alamat: '', kota: '' })
   const [errors, setErrors] = useState({})
   const [loading, setLoading] = useState(false)
 
@@ -58,9 +58,9 @@ function ModalTambah({ onClose, onSave }) {
     try {
       // FIX: Sekarang hit API yang sesungguhnya
       const res = await api.post('/outlets', {
-        nama:   form.nama,
+        nama: form.nama,
         alamat: form.alamat || null,
-        kota:   form.kota   || null,
+        kota: form.kota || null,
       })
       onSave(res.data.data)
     } catch (err) {
@@ -133,7 +133,7 @@ function ModalTambah({ onClose, onSave }) {
 }
 
 function ModalEdit({ outlet, onClose, onUpdate }) {
-  const [form, setForm]     = useState({ nama: outlet.nama || '', alamat: outlet.alamat || '', kota: outlet.kota || '' })
+  const [form, setForm] = useState({ nama: outlet.nama || '', alamat: outlet.alamat || '', kota: outlet.kota || '' })
   const [errors, setErrors] = useState({})
   const [loading, setLoading] = useState(false)
 
@@ -150,9 +150,9 @@ function ModalEdit({ outlet, onClose, onUpdate }) {
     setLoading(true)
     try {
       const res = await api.put(`/outlets/${outlet.id}`, {
-        nama:   form.nama,
+        nama: form.nama,
         alamat: form.alamat || null,
-        kota:   form.kota   || null,
+        kota: form.kota || null,
       })
       onUpdate(res.data.data)
     } catch (err) {
@@ -262,11 +262,9 @@ function ModalDetail({ outlet, onClose, onToggleStatus }) {
           <div className="bg-zinc-50 rounded-xl p-4 space-y-2.5">
             {[
               { label: 'Kode Outlet', val: outlet.kode_outlet || '-' },
-              { label: 'Nama',        val: outlet.nama },
-              { label: 'Alamat',      val: outlet.alamat || '-' },
-              { label: 'Kota',        val: outlet.kota   || '-' },
-              { label: 'Transaksi',   val: `${outlet.total_transaksi || 0} transaksi` },
-              { label: 'Omzet',       val: formatRupiah(outlet.total_omzet || 0) },
+              { label: 'Nama', val: outlet.nama },
+              { label: 'Alamat', val: outlet.alamat || '-' },
+              { label: 'Kota', val: outlet.kota || '-' },
             ].map(r => (
               <div key={r.label} className="flex justify-between text-sm">
                 <span className="text-zinc-500">{r.label}</span>
@@ -321,14 +319,16 @@ function ModalAturProduk({ outlet, onClose }) {
         // Fetch Outlet's assigned products
         const resOutlet = await api.get(`/outlets/${outlet.id}/products`)
         const assigned = resOutlet.data.data || []
-        
+
         // Build selection map
         const initialMap = {}
         allProds.forEach(p => {
           const matched = assigned.find(a => a.id === p.id)
           initialMap[p.id] = {
             selected: !!matched,
-            stok: matched ? (matched.pivot?.stok || 0) : 0
+            stok: matched ? (matched.pivot?.stok || 0) : 0,
+            harga: matched ? (matched.pivot?.harga || '') : '',
+            modal: matched ? (matched.pivot?.modal || '') : ''
           }
         })
         setSelection(initialMap)
@@ -355,6 +355,20 @@ function ModalAturProduk({ outlet, onClose }) {
     }))
   }
 
+  const changeHarga = (id, val) => {
+    setSelection(prev => ({
+      ...prev,
+      [id]: { ...prev[id], harga: val }
+    }))
+  }
+
+  const changeModal = (id, val) => {
+    setSelection(prev => ({
+      ...prev,
+      [id]: { ...prev[id], modal: val }
+    }))
+  }
+
   const handleSave = async () => {
     setSaving(true)
     try {
@@ -362,7 +376,9 @@ function ModalAturProduk({ outlet, onClose }) {
         .filter(id => selection[id].selected)
         .map(id => ({
           id: parseInt(id),
-          stok: selection[id].stok === '' ? 0 : selection[id].stok
+          stok: selection[id].stok === '' ? 0 : selection[id].stok,
+          harga: selection[id].harga === '' ? null : parseFloat(selection[id].harga),
+          modal: selection[id].modal === '' ? null : parseFloat(selection[id].modal),
         }))
 
       await api.post(`/outlets/${outlet.id}/products`, { products: payloadProducts })
@@ -410,7 +426,7 @@ function ModalAturProduk({ outlet, onClose }) {
                         <div className={`w-4 h-4 bg-white rounded-full transition-transform ${sel.selected ? 'translate-x-4' : 'translate-x-0'}`} />
                       </div>
                     </button>
-                    
+
                     {/* Photo */}
                     <div className="w-12 h-12 rounded-lg bg-zinc-100 shrink-0 overflow-hidden">
                       {p.gambar_url ? (
@@ -424,23 +440,43 @@ function ModalAturProduk({ outlet, onClose }) {
                         </div>
                       )}
                     </div>
-                    
+
                     {/* Product Info */}
                     <div className="flex-1">
                       <p className="font-semibold text-zinc-900 text-sm">{p.nama}</p>
                       <p className="text-zinc-500 text-xs">{p.kategori || 'Tanpa kategori'} • Rp {Number(p.harga).toLocaleString('id-ID')}</p>
                     </div>
 
-                    {/* Stock Input */}
+                    {/* Stock, Harga, HPP Inputs */}
                     {sel.selected && (
-                      <div className="flex items-center gap-2 shrink-0">
-                        <label className="text-xs text-zinc-600 font-semibold">Stok:</label>
-                        <input type="number" min="0"
-                          value={sel.stok === 0 ? '' : sel.stok}
-                          placeholder="0"
-                          onChange={e => changeStok(p.id, e.target.value)}
-                          className="w-20 border border-zinc-300 rounded-lg px-2 py-1 text-sm focus:outline-none focus:border-red-600 text-center"
-                        />
+                      <div className="flex items-center gap-3 shrink-0 flex-wrap justify-end max-w-sm">
+                        <div className="flex items-center gap-1.5">
+                          <label className="text-[10px] text-zinc-500 uppercase font-bold tracking-wider">Stok</label>
+                          <input type="number" min="0"
+                            value={sel.stok === 0 ? '' : sel.stok}
+                            placeholder="0"
+                            onChange={e => changeStok(p.id, e.target.value)}
+                            className="w-16 border border-zinc-300 rounded-lg px-2 py-1.5 text-xs font-mono focus:outline-none focus:border-red-600 text-center"
+                          />
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <label className="text-[10px] text-zinc-500 uppercase font-bold tracking-wider">Harga (Rp)</label>
+                          <input type="number" min="0"
+                            value={sel.harga}
+                            placeholder={p.harga}
+                            onChange={e => changeHarga(p.id, e.target.value)}
+                            className="w-20 border border-zinc-300 rounded-lg px-2 py-1.5 text-xs font-mono focus:outline-none focus:border-red-600 text-right"
+                          />
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <label className="text-[10px] text-zinc-500 uppercase font-bold tracking-wider">HPP (Rp)</label>
+                          <input type="number" min="0"
+                            value={sel.modal}
+                            placeholder={p.modal || '-'}
+                            onChange={e => changeModal(p.id, e.target.value)}
+                            className="w-20 border border-zinc-300 rounded-lg px-2 py-1.5 text-xs font-mono focus:outline-none focus:border-red-600 text-right"
+                          />
+                        </div>
                       </div>
                     )}
                   </div>
@@ -466,12 +502,12 @@ function ModalAturProduk({ outlet, onClose }) {
 }
 
 export default function AdminOutlet() {
-  const [outlets, setOutlets]       = useState([])
-  const [loading, setLoading]       = useState(true)
-  const [search, setSearch]         = useState('')
-  const [filterStatus, setFilter]   = useState('semua')
+  const [outlets, setOutlets] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [search, setSearch] = useState('')
+  const [filterStatus, setFilter] = useState('semua')
   const [showTambah, setShowTambah] = useState(false)
-  const [detailOutlet, setDetail]   = useState(null)
+  const [detailOutlet, setDetail] = useState(null)
   const [aturOutlet, setAturOutlet] = useState(null)
   const [editOutlet, setEditOutlet] = useState(null)
 
@@ -525,16 +561,16 @@ export default function AdminOutlet() {
 
   const filtered = outlets.filter(o => {
     const matchSearch = o.nama?.toLowerCase().includes(search.toLowerCase()) ||
-                        o.alamat?.toLowerCase().includes(search.toLowerCase()) ||
-                        o.kota?.toLowerCase().includes(search.toLowerCase())
+      o.alamat?.toLowerCase().includes(search.toLowerCase()) ||
+      o.kota?.toLowerCase().includes(search.toLowerCase())
     const matchStatus = filterStatus === 'semua' || o.status === filterStatus
     return matchSearch && matchStatus
   })
 
   const stats = {
-    total:    outlets.length,
-    aktif:    outlets.filter(o => o.status === 'aktif').length,
-    warning:  outlets.filter(o => o.status === 'warning').length,
+    total: outlets.length,
+    aktif: outlets.filter(o => o.status === 'aktif').length,
+    warning: outlets.filter(o => o.status === 'warning').length,
     nonaktif: outlets.filter(o => o.status === 'nonaktif').length,
   }
 
@@ -586,10 +622,10 @@ export default function AdminOutlet() {
         {/* Stats */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {[
-            { label: 'Total Outlet', val: stats.total,    color: 'bg-zinc-900' },
-            { label: 'Aktif',        val: stats.aktif,    color: 'bg-green-600' },
-            { label: 'Warning',      val: stats.warning,  color: 'bg-orange-500' },
-            { label: 'Nonaktif',     val: stats.nonaktif, color: 'bg-zinc-400' },
+            { label: 'Total Outlet', val: stats.total, color: 'bg-zinc-900' },
+            { label: 'Aktif', val: stats.aktif, color: 'bg-green-600' },
+            { label: 'Warning', val: stats.warning, color: 'bg-orange-500' },
+            { label: 'Nonaktif', val: stats.nonaktif, color: 'bg-zinc-400' },
           ].map(s => (
             <div key={s.label} className={`${s.color} rounded-2xl px-5 py-4 text-white`}>
               <p className="text-white/70 text-xs font-medium">{s.label}</p>
@@ -659,9 +695,9 @@ export default function AdminOutlet() {
 
                   <div className="grid grid-cols-3 gap-2">
                     {[
-                      { label: 'Kasir',     val: outlet.total_kasir     || 0 },
+                      { label: 'Kasir', val: outlet.total_kasir || 0 },
                       { label: 'Transaksi', val: outlet.total_transaksi || 0 },
-                      { label: 'Omzet',     val: formatRupiah(outlet.total_omzet || 0) },
+                      { label: 'Omzet', val: formatRupiah(outlet.total_omzet || 0) },
                     ].map(s => (
                       <div key={s.label} className="bg-zinc-50 rounded-xl px-3 py-2.5 text-center">
                         <p className="text-zinc-900 font-bold text-xs">{s.val}</p>

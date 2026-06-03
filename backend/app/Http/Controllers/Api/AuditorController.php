@@ -77,15 +77,17 @@ class AuditorController extends Controller
                     ->symbols()
             ],
             'no_telepon' => 'nullable|string|max:20',
-            'outlet_id'  => 'required|integer|exists:outlets,id',
+            'outlet_ids' => 'required|array|min:1',
+            'outlet_ids.*' => 'integer|exists:outlets,id',
             'instansi'   => 'required|string|max:255',
         ], [
             'name.required'      => 'Nama auditor wajib diisi.',
             'email.required'     => 'Email wajib diisi.',
             'email.unique'       => 'Email sudah terdaftar.',
             'password.required'  => 'Password wajib diisi.',
-            'outlet_id.required' => 'Outlet wajib dipilih.',
-            'outlet_id.exists'   => 'Outlet tidak ditemukan.',
+            'outlet_ids.required'=> 'Outlet wajib dipilih minimal 1.',
+            'outlet_ids.array'   => 'Format outlet tidak valid.',
+            'outlet_ids.*.exists'=> 'Outlet tidak ditemukan.',
             'instansi.required'  => 'Instansi wajib diisi.',
         ]);
 
@@ -98,10 +100,11 @@ class AuditorController extends Controller
         }
 
         $outletIds = $request->user()->outlets()->pluck('outlets.id');
-        if (!$outletIds->contains($request->outlet_id)) {
+        $invalidOutlets = collect($request->outlet_ids)->diff($outletIds);
+        if ($invalidOutlets->isNotEmpty()) {
             return response()->json([
                 'success' => false,
-                'message' => 'Anda tidak memiliki akses ke outlet tersebut.',
+                'message' => 'Anda tidak memiliki akses ke beberapa outlet yang dipilih.',
             ], 403);
         }
 
@@ -115,7 +118,7 @@ class AuditorController extends Controller
         ]);
 
         $auditor->assignRole('auditor');
-        $auditor->outlets()->attach($request->outlet_id);
+        $auditor->outlets()->attach($request->outlet_ids);
 
         return response()->json([
             'success' => true,
@@ -125,7 +128,7 @@ class AuditorController extends Controller
                 'name'       => $auditor->name,
                 'email'      => $auditor->email,
                 'no_telepon' => $auditor->no_telepon,
-                'outlet_id'  => $request->outlet_id,
+                'outlet_ids' => $request->outlet_ids,
                 'instansi'   => $auditor->instansi,
             ],
         ], 201);
@@ -151,8 +154,10 @@ class AuditorController extends Controller
             'name'       => 'sometimes|required|string|max:255',
             'no_telepon' => 'nullable|string|max:20',
             'is_active'  => 'sometimes|boolean',
-            'outlet_id'  => 'sometimes|integer|exists:outlets,id',
+            'outlet_ids' => 'sometimes|array|min:1',
+            'outlet_ids.*' => 'integer|exists:outlets,id',
             'instansi'   => 'sometimes|required|string|max:255',
+            'avatar'     => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
             'password'   => [
                 'sometimes',
                 'confirmed',
@@ -180,18 +185,33 @@ class AuditorController extends Controller
         if ($request->has('instansi'))   $updateData['instansi']   = $request->instansi;
         if ($request->password)          $updateData['password']   = Hash::make($request->password);
 
+        if ($request->hasFile('avatar')) {
+            $file = $request->file('avatar');
+            $filename = 'avatar_' . $auditor->id . '_' . time() . '.' . $file->getClientOriginalExtension();
+            $file->move(public_path('avatars'), $filename);
+            
+            if ($auditor->avatar_url) {
+                $oldPath = public_path(parse_url($auditor->avatar_url, PHP_URL_PATH));
+                if (file_exists($oldPath) && is_file($oldPath)) {
+                    @unlink($oldPath);
+                }
+            }
+            $updateData['avatar_url'] = url('avatars/' . $filename);
+        }
+
         if (!empty($updateData)) {
             $auditor->update($updateData);
         }
 
-        if ($request->has('outlet_id') && $request->outlet_id) {
-            if (!$outletIds->contains($request->outlet_id)) {
+        if ($request->has('outlet_ids') && is_array($request->outlet_ids)) {
+            $invalidOutlets = collect($request->outlet_ids)->diff($outletIds);
+            if ($invalidOutlets->isNotEmpty()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Anda tidak memiliki akses ke outlet tersebut.',
+                    'message' => 'Anda tidak memiliki akses ke beberapa outlet tersebut.',
                 ], 403);
             }
-            $auditor->outlets()->sync([$request->outlet_id]);
+            $auditor->outlets()->sync($request->outlet_ids);
         }
 
         return response()->json([

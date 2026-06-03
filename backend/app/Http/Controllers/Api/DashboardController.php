@@ -43,14 +43,13 @@ class DashboardController extends Controller
             ->whereDate('created_at', today())
             ->sum('total_amount');
 
-        // Estimasi keuntungan dari stok yang ada
-        $estimasiKeuntungan = DB::table('outlet_product')
+        // Estimasi pendapatan dari stok yang ada
+        $estimasiPendapatan = DB::table('outlet_product')
             ->join('products', 'outlet_product.product_id', '=', 'products.id')
             ->whereIn('outlet_product.outlet_id', $outletIds)
             ->where('products.is_active', true)
-            ->whereNotNull('products.modal')
             ->whereNotNull('outlet_product.stok')
-            ->select(DB::raw('SUM((products.harga - products.modal) * outlet_product.stok) as estimasi'))
+            ->select(DB::raw('SUM(products.harga * outlet_product.stok) as estimasi'))
             ->value('estimasi') ?? 0;
 
         $period = $request->query('period', '7hr');
@@ -113,7 +112,7 @@ class DashboardController extends Controller
                     'transaksi_hari_ini'  => $transaksiHariIni,
                     'total_produk_aktif'  => $totalProdukAktif,
                     'total_outlet_aktif'  => $totalOutletAktif,
-                    'estimasi_keuntungan' => $estimasiKeuntungan,
+                    'estimasi_pendapatan' => $estimasiPendapatan,
                 ],
                 'grafik_pendapatan' => $grafikPendapatan,
                 'transaksi_terbaru' => $transaksiTerbaru,

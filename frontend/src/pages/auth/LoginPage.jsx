@@ -22,16 +22,18 @@ const LoginPage = () => {
         setError('');
         try {
             const res = await api.post('/auth/login', form);
-            const { user, token } = res.data.data;
+            let { user, token } = res.data.data;
 
             // FIX: Fetch outlets setelah login supaya dashboard tidak kosong
-            // /auth/me sudah return outlets di response-nya
+            // /auth/me sudah return outlets di response-nya dan juga avatar_url
             let outlets = [];
             try {
                 const meRes = await api.get('/auth/me', {
                     headers: { Authorization: `Bearer ${token}` }
                 });
-                outlets = meRes.data.data?.outlets || [];
+                const fullUser = meRes.data.data;
+                user = { ...user, ...fullUser }; // Merge supaya avatar_url dsb masuk
+                outlets = fullUser?.outlets || [];
             } catch { /* outlets tetap [] kalau gagal */ }
 
             setAuth(user, token, outlets);
