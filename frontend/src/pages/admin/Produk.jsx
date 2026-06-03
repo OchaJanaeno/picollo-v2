@@ -402,9 +402,12 @@ export default function AdminProduk() {
               Kelola daftar semua produk. Untuk mengaktifkan dan mengatur stok, pergi ke menu Manajemen Outlet.
             </p>
           </div>
-          <button onClick={() => { setEditData(null); setShowModal(true) }}
-            className="flex items-center gap-2 bg-red-800 hover:bg-red-900 text-white
-                       font-semibold px-4 py-2.5 rounded-xl text-sm transition-colors self-start sm:self-auto shadow-lg shadow-red-900/20">
+          <button
+            onClick={() => { setEditData(null); setShowModal(true) }}
+            className="flex items-center gap-2 bg-yellow-400 hover:bg-yellow-500 text-zinc-900
+             font-semibold px-4 py-2.5 rounded-xl text-sm transition-colors
+             self-start sm:self-auto shadow-lg shadow-yellow-500/20"
+          >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
             </svg>
