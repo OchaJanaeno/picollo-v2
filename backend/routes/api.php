@@ -14,6 +14,11 @@ use App\Http\Controllers\Api\AuditLogController;
 use App\Http\Controllers\Api\HashVerificationController;
 use App\Http\Controllers\Api\AuditorController;
 
+use App\Http\Controllers\Api\PaymentCallbackController;
+
+// Webhook / Notification route untuk Midtrans (Public)
+Route::post('/payment/midtrans/notification', [PaymentCallbackController::class, 'midtransNotification']);
+
 // Public routes — dengan throttle untuk keamanan
 Route::prefix('auth')->middleware('throttle:10,1')->group(function () {
     Route::post('/register',        [AuthController::class, 'register']);

@@ -212,6 +212,10 @@ class CorrectionLogController extends Controller
                 }
             }
 
+            $fraudService = app(\App\Services\FraudDetectionService::class);
+            $fraudIndicators = $fraudService->analyzeCorrection($transaction, $user->id);
+            $isSuspicious = !empty($fraudIndicators);
+
             $log = CorrectionLog::create([
                 'transaction_id'  => $transaction->id,
                 'corrected_by'    => $user->id,
@@ -223,6 +227,8 @@ class CorrectionLogController extends Controller
                 'hash_sebelum'    => $hashSebelum,
                 'hash_sesudah'    => $hashSesudah,
                 'status'          => 'flagged',
+                'is_suspicious'   => $isSuspicious,
+                'fraud_indicators'=> $isSuspicious ? $fraudIndicators : null,
             ]);
 
             return response()->json([
