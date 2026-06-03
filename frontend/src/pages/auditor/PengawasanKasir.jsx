@@ -96,7 +96,7 @@ export default function AuditorPengawasanKasir() {
                 </svg>
                 <input type="text" value={search} onChange={e => setSearch(e.target.value)}
                   placeholder="Cari kasir..."
-                  className="w-full border border-zinc-300 rounded-xl pl-10 pr-4 py-2 text-sm focus:outline-none focus:border-red-800 transition-colors" />
+                  className="w-full border border-zinc-300 rounded-xl pl-10 pr-4 py-2 text-sm focus:outline-none focus:border-yellow-400 transition-colors" />
               </div>
             </div>
             <div className="divide-y divide-zinc-50">
@@ -109,9 +109,9 @@ export default function AuditorPengawasanKasir() {
               ) : filtered.map(k => (
                 <button key={k.id} onClick={() => fetchActivity(k)}
                   className={`w-full flex items-center gap-3 p-4 text-left hover:bg-zinc-50 transition-colors
-                    ${selected?.id === k.id ? 'bg-red-50 border-l-2 border-red-800' : ''}`}>
-                  <div className="w-9 h-9 bg-red-900/10 rounded-full flex items-center justify-center shrink-0">
-                    <span className="text-red-800 text-sm font-bold">{k.nama?.[0]?.toUpperCase()}</span>
+                    ${selected?.id === k.id ? 'bg-yellow-50 border-l-2 border-yellow-400' : ''}`}>
+                  <div className="w-9 h-9 bg-yellow-400/20 rounded-full flex items-center justify-center shrink-0">
+                    <span className="text-yellow-600 text-sm font-bold">{k.nama?.[0]?.toUpperCase()}</span>
                   </div>
                   <div className="min-w-0">
                     <p className="text-sm font-semibold text-zinc-900 truncate">{k.nama}</p>
@@ -158,7 +158,7 @@ export default function AuditorPengawasanKasir() {
                       <div className="flex items-center gap-3">
                         <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0
                           ${a.type === 'login' ? 'bg-green-100 text-green-700' :
-                            a.type === 'logout' ? 'bg-zinc-100 text-zinc-500' : 'bg-red-100 text-red-700'}`}>
+                            a.type === 'logout' ? 'bg-zinc-100 text-zinc-500' : 'bg-yellow-100 text-yellow-700'}`}>
                           {a.type === 'login' && (
                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />

@@ -104,7 +104,7 @@ export default function AdminDashboard() {
       label: 'Omzet Hari Ini',
       value: loading ? null : formatRupiah(stats?.pendapatan_hari_ini || 0),
       up: null,
-      color: 'bg-red-800',
+      color: 'bg-yellow-400',
       icon: STAT_ICONS.omzet,
     },
     {
@@ -129,7 +129,7 @@ export default function AdminDashboard() {
       value: loading ? null : formatRupiah(stats?.estimasi_pendapatan || 0),
       change: '-',
       up: null,
-      color: 'bg-red-900',
+      color: 'bg-yellow-500',
       icon: STAT_ICONS.anomali,
     },
   ]
@@ -149,8 +149,8 @@ export default function AdminDashboard() {
               <button key={p} onClick={() => setPeriod(p)}
                 className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all
                   ${period === p
-                    ? 'bg-red-800 text-white'
-                    : 'bg-white text-zinc-600 border border-zinc-200 hover:border-red-300'}`}>
+                    ? 'bg-yellow-400 text-zinc-900'
+                    : 'bg-white text-zinc-600 border border-zinc-200 hover:border-yellow-300'}`}>
                 {p}
               </button>
             ))}
@@ -244,7 +244,7 @@ export default function AdminDashboard() {
           <div className="bg-white rounded-2xl border border-zinc-200 overflow-hidden">
             <div className="flex items-center justify-between px-5 py-4 border-b border-zinc-100">
               <h3 className="font-bold text-zinc-900 text-sm">Transaksi Terbaru</h3>
-              <a href="/admin/transaksi" className="text-red-800 text-xs font-semibold hover:underline">
+              <a href="/admin/transaksi" className="text-yellow-600 text-xs font-semibold hover:underline">
                 Lihat semua
               </a>
             </div>
@@ -295,7 +295,7 @@ export default function AdminDashboard() {
           <div className="bg-white rounded-2xl border border-zinc-200 overflow-hidden">
             <div className="flex items-center justify-between px-5 py-4 border-b border-zinc-100">
               <h3 className="font-bold text-zinc-900 text-sm">Status Outlet</h3>
-              <a href="/admin/outlet" className="text-red-800 text-xs font-semibold hover:underline">
+              <a href="/admin/outlet" className="text-yellow-600 text-xs font-semibold hover:underline">
                 Kelola →
               </a>
             </div>
@@ -316,8 +316,8 @@ export default function AdminDashboard() {
                 outlets.map((o) => (
                   <div key={o.id} className="flex items-center justify-between px-5 py-3.5 hover:bg-zinc-50 transition-colors">
                     <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-8 h-8 bg-red-900/10 rounded-lg flex items-center justify-center shrink-0">
-                        <svg className="w-4 h-4 text-red-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <div className="w-8 h-8 bg-yellow-400/20 rounded-lg flex items-center justify-center shrink-0">
+                        <svg className="w-4 h-4 text-yellow-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                             d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                         </svg>

@@ -59,7 +59,7 @@ function ModalStruk({ transaksi, onClose, onBaru }) {
           <div className="border-t border-dashed border-zinc-300 pt-3 space-y-1.5">
             <div className="flex justify-between text-sm font-bold">
               <span className="text-zinc-900">Total</span>
-              <span className="text-red-800">
+              <span className="text-yellow-700">
                 Rp {Number(transaksi.total).toLocaleString('id-ID')}
               </span>
             </div>
@@ -104,7 +104,7 @@ function ModalStruk({ transaksi, onClose, onBaru }) {
             Print
           </button>
           <button onClick={onBaru}
-            className="flex-1 bg-zinc-900 hover:bg-red-900 text-white font-semibold py-2.5
+            className="flex-1 bg-zinc-900 hover:bg-zinc-700 text-white font-semibold py-2.5
                        rounded-xl text-sm transition-colors">
             Transaksi Baru
           </button>
@@ -232,7 +232,7 @@ function ModalPembayaran({ keranjang, total, user, kasirNama, onClose, onSuccess
             </div>
             <div className="border-t border-zinc-200 mt-3 pt-3 flex justify-between">
               <span className="text-zinc-900 font-bold">Total</span>
-              <span className="text-red-800 font-bold text-lg">
+              <span className="text-yellow-600 font-bold text-lg">
                 Rp {total.toLocaleString('id-ID')}
               </span>
             </div>
@@ -260,8 +260,8 @@ function ModalPembayaran({ keranjang, total, user, kasirNama, onClose, onSuccess
                   className={`flex flex-col items-center gap-2 py-4 rounded-xl border-2
                               transition-all
                     ${metode === m.val
-                      ? 'bg-red-800 border-red-800 text-white'
-                      : 'bg-white border-zinc-200 text-zinc-500 hover:border-red-300 hover:bg-red-50'}`}>
+                      ? 'bg-yellow-400 border-yellow-400 text-zinc-900'
+                      : 'bg-white border-zinc-200 text-zinc-500 hover:border-yellow-300 hover:bg-yellow-50'}`}>
                   <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={m.icon} />
                   </svg>
@@ -319,7 +319,7 @@ function ModalPembayaran({ keranjang, total, user, kasirNama, onClose, onSuccess
                               focus:outline-none transition-colors font-mono text-lg
                               ${errorUang
                       ? 'border-red-400 bg-red-50'
-                      : 'border-zinc-300 focus:border-red-800'}`} />
+                      : 'border-zinc-300 focus:border-yellow-400'}`} />
                 {errorUang && (
                   <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
                     <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -374,7 +374,7 @@ function ModalPembayaran({ keranjang, total, user, kasirNama, onClose, onSuccess
 
           {/* Tombol Konfirmasi */}
           <button onClick={handleBayar} disabled={loading}
-            className="w-full bg-zinc-900 hover:bg-red-900 disabled:bg-zinc-400
+            className="w-full bg-zinc-900 hover:bg-yellow-500 disabled:bg-zinc-400
                        text-white font-bold py-3.5 rounded-xl text-sm transition-colors
                        flex items-center justify-center gap-2">
             {loading
@@ -519,7 +519,7 @@ export default function KasirTransaksi() {
                 <input type="text" value={search} onChange={e => setSearch(e.target.value)}
                   placeholder="Ketik nama produk..."
                   className="w-full border border-zinc-300 rounded-xl pl-10 pr-4 py-2.5 text-sm
-                             focus:outline-none focus:border-red-800 transition-colors"/>
+                             focus:outline-none focus:border-yellow-400 transition-colors"/>
               </div>
             </div>
             <div>
@@ -529,7 +529,7 @@ export default function KasirTransaksi() {
                   <button key={k} onClick={() => setKategori(k)}
                     className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all
                       ${kategori === k
-                        ? 'bg-red-800 text-white'
+                        ? 'bg-yellow-400 text-zinc-900'
                         : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200 border border-zinc-200'}`}>
                     {k}
                   </button>
@@ -562,7 +562,7 @@ export default function KasirTransaksi() {
                 {filtered.map(produk => (
                   <div key={produk.id}
                     className="bg-white border border-zinc-200 rounded-2xl overflow-hidden
-                               hover:border-red-200 hover:shadow-md transition-all group">
+                               hover:border-yellow-200 hover:shadow-md transition-all group">
                     <div className="h-28 bg-zinc-100 flex items-center justify-center overflow-hidden">
                       {produk.foto
                         ? <img src={produk.foto} alt={produk.nama}
@@ -583,7 +583,7 @@ export default function KasirTransaksi() {
                         </span>
                       )}
                       <div className="flex items-center justify-between mt-2">
-                        <span className="text-red-800 font-bold text-sm">
+                        <span className="text-yellow-600 font-bold text-sm">
                           Rp {Number(produk.harga).toLocaleString('id-ID')}
                         </span>
                         <div className="flex flex-col items-end gap-1">
@@ -597,9 +597,9 @@ export default function KasirTransaksi() {
                             )}
                             <button onClick={() => addToKeranjang(produk)}
                               disabled={produk.stok <= 0}
-                              className="w-8 h-8 bg-red-800 hover:bg-red-900 disabled:bg-zinc-300 disabled:cursor-not-allowed rounded-full
+                              className="w-8 h-8 bg-yellow-400 hover:bg-yellow-500 disabled:bg-zinc-300 disabled:cursor-not-allowed rounded-full
                                          flex items-center justify-center transition-colors
-                                         shadow-md shadow-red-900/20">
+                                         shadow-md shadow-yellow-500/20">
                               <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor"
                                 viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
@@ -622,7 +622,7 @@ export default function KasirTransaksi() {
           <div className="mt-9">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <svg className="w-5 h-5 text-red-800" fill="none" stroke="currentColor"
+                <svg className="w-5 h-5 text-yellow-700" fill="none" stroke="currentColor"
                   viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                     d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
@@ -630,7 +630,7 @@ export default function KasirTransaksi() {
                 <h3 className="font-bold text-zinc-900">Keranjang</h3>
               </div>
               {totalItem > 0 && (
-                <span className="w-6 h-6 bg-red-800 rounded-full flex items-center
+                <span className="w-6 h-6 bg-yellow-400 rounded-full flex items-center
                                  justify-center text-white text-xs font-bold">
                   {totalItem}
                 </span>
@@ -674,7 +674,7 @@ export default function KasirTransaksi() {
                         <div className="flex items-start justify-between gap-1">
                           <p className="text-zinc-900 font-semibold text-sm truncate">{item.nama}</p>
                           <button onClick={() => hapusItem(item.id)}
-                            className="text-zinc-400 hover:text-red-600 transition-colors shrink-0">
+                            className="text-zinc-400 hover:text-yellow-600 transition-colors shrink-0">
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                                 d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -704,7 +704,7 @@ export default function KasirTransaksi() {
                               </button>
                             ) : (
                               <button onClick={() => updateQty(item.id, 1)}
-                                className="w-6 h-6 bg-red-800 hover:bg-red-900 rounded-full
+                                className="w-6 h-6 bg-yellow-400 hover:bg-yellow-500 rounded-full
                                            flex items-center justify-center text-white
                                            font-bold text-sm transition-colors">
                                 +
@@ -733,14 +733,14 @@ export default function KasirTransaksi() {
               </div>
               <div className="flex justify-between font-bold pt-2 border-t border-zinc-100">
                 <span className="text-zinc-900">Total Bayar</span>
-                <span className="text-red-800 text-lg">
+                <span className="text-yellow-600 text-lg">
                   Rp {total.toLocaleString('id-ID')}
                 </span>
               </div>
             </div>
 
             <button onClick={() => setShowBayar(true)} disabled={keranjang.length === 0}
-              className="w-full bg-zinc-900 hover:bg-red-900 disabled:bg-zinc-300
+              className="w-full bg-zinc-900 hover:bg-zinc-700 disabled:bg-zinc-300
                          text-white font-bold py-3.5 rounded-xl text-sm transition-colors
                          flex items-center justify-center gap-2">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -755,7 +755,7 @@ export default function KasirTransaksi() {
 
             {keranjang.length > 0 && (
               <button onClick={() => setKeranjang([])}
-                className="w-full text-zinc-400 hover:text-red-600 text-xs font-medium
+                className="w-full text-zinc-400 hover:text-yellow-600 text-xs font-medium
                            py-1 transition-colors">
                 Kosongkan keranjang
               </button>

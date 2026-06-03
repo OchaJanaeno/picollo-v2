@@ -51,7 +51,7 @@ export default function KasirDashboard() {
   }
 
   const statCards = [
-    { label: 'Transaksi Hari Ini', value: stats?.total_transaksi ?? '-', color: 'bg-red-800' },
+    { label: 'Transaksi Hari Ini', value: stats?.total_transaksi ?? '-', color: 'bg-yellow-400' },
     { label: 'Total Omzet', value: stats?.total_omzet ?? '-', color: 'bg-zinc-800' },
     { label: 'QRIS', value: stats?.total_qris ?? '-', color: 'bg-zinc-700' },
     { label: 'Tunai', value: stats?.total_tunai ?? '-', color: 'bg-zinc-600' },
@@ -79,7 +79,7 @@ export default function KasirDashboard() {
         <div className="bg-white rounded-2xl border border-zinc-200 overflow-hidden">
           <div className="flex items-center justify-between px-5 py-4 border-b border-zinc-100">
             <h3 className="font-bold text-zinc-900 text-sm">Transaksi Terbaru Hari Ini</h3>
-            <a href="/kasir/rekap" className="text-red-800 text-xs font-semibold hover:underline">Lihat rekap →</a>
+            <a href="/kasir/rekap" className="text-yellow-600 text-xs font-semibold hover:underline">Lihat rekap →</a>
           </div>
           {loading ? (
             <div className="p-5 space-y-3">{[...Array(3)].map((_, i) => <div key={i} className="h-10 bg-zinc-100 rounded-xl animate-pulse" />)}</div>

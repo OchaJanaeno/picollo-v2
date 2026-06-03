@@ -106,7 +106,7 @@ export default function AuditorLogKoreksi() {
             <input type="text" value={search} onChange={e => setSearch(e.target.value)}
               placeholder="Cari kasir atau ID transaksi..."
               className="w-full border border-zinc-300 rounded-xl pl-10 pr-4 py-2.5 text-sm
-                         focus:outline-none focus:border-red-800 transition-colors"/>
+                         focus:outline-none focus:border-yellow-400 transition-colors"/>
           </div>
           <div className="flex gap-2">
             {['semua', 'edit', 'hapus', 'tambah'].map(t => (
@@ -114,8 +114,8 @@ export default function AuditorLogKoreksi() {
                 className={`px-3 py-1.5 rounded-lg text-xs font-semibold capitalize
                             transition-all border
                   ${filterTipe === t
-                    ? 'bg-red-800 text-white border-red-800'
-                    : 'bg-white text-zinc-600 border-zinc-200 hover:border-red-300'}`}>
+                    ? 'bg-yellow-400 text-zinc-900 border-yellow-400'
+                    : 'bg-white text-zinc-600 border-zinc-200 hover:border-yellow-300'}`}>
                 {t}
               </button>
             ))}

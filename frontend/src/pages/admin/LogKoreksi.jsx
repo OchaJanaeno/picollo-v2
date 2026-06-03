@@ -64,7 +64,7 @@ export default function AdminLogKoreksi() {
             </svg>
             <input type="text" value={search} onChange={e => setSearch(e.target.value)}
               placeholder="Cari ID transaksi, kasir, atau keterangan..."
-              className="w-full border border-zinc-300 rounded-xl pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:border-red-800 transition-colors" />
+              className="w-full border border-zinc-300 rounded-xl pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:border-yellow-400 transition-colors" />
           </div>
         </div>
         <div className="bg-white rounded-2xl border border-zinc-200 overflow-hidden">

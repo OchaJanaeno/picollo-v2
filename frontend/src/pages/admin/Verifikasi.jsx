@@ -36,7 +36,7 @@ export default function AdminVerifikasi() {
         
         {/* Header Section */}
         <div className="bg-gradient-to-br from-zinc-900 to-zinc-800 rounded-3xl p-8 sm:p-10 text-white shadow-2xl relative overflow-hidden">
-          <div className="absolute -right-10 -top-10 w-64 h-64 bg-red-500/10 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute -right-10 -top-10 w-64 h-64 bg-yellow-400/10 rounded-full blur-3xl pointer-events-none" />
           <div className="absolute -left-10 -bottom-10 w-48 h-48 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
           
           <div className="relative z-10">
@@ -70,13 +70,13 @@ export default function AdminVerifikasi() {
                       value={hash} 
                       onChange={e => setHash(e.target.value)}
                       placeholder="Masukkan hash..."
-                      className="w-full bg-zinc-50 border border-zinc-200 rounded-2xl pl-12 pr-4 py-4 text-sm font-mono text-zinc-900 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-red-800/20 focus:border-red-800 transition-all" 
+                      className="w-full bg-zinc-50 border border-zinc-200 rounded-2xl pl-12 pr-4 py-4 text-sm font-mono text-zinc-900 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-yellow-400/20 focus:border-yellow-400 transition-all" 
                     />
                   </div>
                 </div>
                 
                 <button type="submit" disabled={loading || !hash.trim()}
-                  className="w-full bg-red-800 hover:bg-red-900 disabled:bg-zinc-200 disabled:text-zinc-400 text-white font-bold py-4 rounded-2xl text-sm transition-all shadow-xl shadow-red-900/20 disabled:shadow-none flex items-center justify-center gap-2 group">
+                  className="w-full bg-yellow-400 hover:bg-yellow-500 disabled:bg-zinc-200 disabled:text-zinc-400 text-zinc-900 font-bold py-4 rounded-2xl text-sm transition-all shadow-xl shadow-yellow-500/20 disabled:shadow-none flex items-center justify-center gap-2 group">
                   {loading ? (
                     <>
                       <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">

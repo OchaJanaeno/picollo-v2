@@ -103,12 +103,12 @@ export default function AdminTransaksi() {
               </svg>
               <input type="text" value={search} onChange={e => setSearch(e.target.value)}
                 placeholder="Cari ID transaksi, kasir, outlet..."
-                className="w-full border border-zinc-300 rounded-xl pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:border-red-800 transition-colors" />
+                className="w-full border border-zinc-300 rounded-xl pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:border-yellow-400 transition-colors" />
             </div>
             <select
               value={filterOutlet}
               onChange={e => setFilterOutlet(e.target.value)}
-              className="bg-white border border-zinc-300 text-zinc-700 text-sm font-semibold rounded-xl px-4 py-2.5 focus:outline-none focus:border-red-800 transition-colors shrink-0"
+              className="bg-white border border-zinc-300 text-zinc-700 text-sm font-semibold rounded-xl px-4 py-2.5 focus:outline-none focus:border-yellow-400 transition-colors shrink-0"
             >
               <option value="">Semua Outlet</option>
               {outlets?.map(o => (
@@ -119,10 +119,10 @@ export default function AdminTransaksi() {
               type="date"
               value={filterDate}
               onChange={e => setFilterDate(e.target.value)}
-              className="bg-white border border-zinc-300 text-zinc-700 text-sm font-semibold rounded-xl px-4 py-2.5 focus:outline-none focus:border-red-800 transition-colors shrink-0"
+              className="bg-white border border-zinc-300 text-zinc-700 text-sm font-semibold rounded-xl px-4 py-2.5 focus:outline-none focus:border-yellow-400 transition-colors shrink-0"
             />
             {(filterOutlet || filterDate) && (
-              <button onClick={() => { setFilterOutlet(''); setFilterDate('') }} className="text-zinc-500 hover:text-red-700 text-sm font-semibold px-2">
+              <button onClick={() => { setFilterOutlet(''); setFilterDate('') }} className="text-zinc-500 hover:text-yellow-600 text-sm font-semibold px-2">
                 Reset
               </button>
             )}
@@ -132,7 +132,7 @@ export default function AdminTransaksi() {
               {['semua', 'verified', 'pending', 'fraud'].map(s => (
                 <button key={s} onClick={() => setFilterStatus(s)}
                   className={`px-3 py-1.5 rounded-lg text-xs font-semibold capitalize transition-all border
-                    ${filterStatus === s ? 'bg-red-800 text-white border-red-800' : 'bg-white text-zinc-600 border-zinc-200 hover:border-red-300'}`}>
+                    ${filterStatus === s ? 'bg-yellow-400 text-zinc-900 border-yellow-400' : 'bg-white text-zinc-600 border-zinc-200 hover:border-yellow-300'}`}>
                   {s}
                 </button>
               ))}
@@ -179,7 +179,7 @@ export default function AdminTransaksi() {
                     <td className="px-5 py-3.5 text-sm text-zinc-500">{tx.waktu}</td>
                     <td className="px-5 py-3.5"><StatusBadge status={tx.status} /></td>
                     <td className="px-5 py-3.5">
-                      <button onClick={() => setDetail(tx)} className="text-red-800 text-xs font-semibold hover:underline">Detail</button>
+                      <button onClick={() => setDetail(tx)} className="text-yellow-600 text-xs font-semibold hover:underline">Detail</button>
                     </td>
                   </tr>
                 ))}
