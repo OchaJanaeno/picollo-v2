@@ -4,12 +4,19 @@ const useAuthStore = create((set) => ({
     user:    JSON.parse(localStorage.getItem('user'))    || null,
     token:   localStorage.getItem('token')               || null,
     outlets: JSON.parse(localStorage.getItem('outlets')) || [],
+    activeOutletId: localStorage.getItem('activeOutletId') || '',
 
     setAuth: (user, token, outlets = []) => {
         localStorage.setItem('user',    JSON.stringify(user));
         localStorage.setItem('token',   token);
         localStorage.setItem('outlets', JSON.stringify(outlets));
-        set({ user, token, outlets });
+        localStorage.setItem('activeOutletId', ''); // default kosong = Semua Outlet
+        set({ user, token, outlets, activeOutletId: '' });
+    },
+
+    setActiveOutletId: (outletId) => {
+        localStorage.setItem('activeOutletId', outletId);
+        set({ activeOutletId: outletId });
     },
 
     setUser: (user) => {
@@ -27,14 +34,16 @@ const useAuthStore = create((set) => ({
         localStorage.removeItem('user');
         localStorage.removeItem('token');
         localStorage.removeItem('outlets');
-        set({ user: null, token: null, outlets: [] });
+        localStorage.removeItem('activeOutletId');
+        set({ user: null, token: null, outlets: [], activeOutletId: '' });
     },
 
     clearAuth: () => {
         localStorage.removeItem('user');
         localStorage.removeItem('token');
         localStorage.removeItem('outlets');
-        set({ user: null, token: null, outlets: [] });
+        localStorage.removeItem('activeOutletId');
+        set({ user: null, token: null, outlets: [], activeOutletId: '' });
     },
 }));
 

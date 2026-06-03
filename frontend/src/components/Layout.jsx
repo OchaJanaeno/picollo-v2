@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { NavLink, useNavigate } from 'react-router-dom'
+import { NavLink, useNavigate, Link } from 'react-router-dom'
 import useAuthStore from '../store/authStore'
 import PicolloLogo from './PicolloLogo'
 
@@ -93,7 +93,7 @@ function Avatar({ foto, user, size = 'sm' }) {
 
 function SidebarContent({ nav, collapsed, onClose }) {
   const navigate             = useNavigate()
-  const { user, logout }     = useAuthStore()
+  const { user, logout, outlets, activeOutletId, setActiveOutletId } = useAuthStore()
   // ── FIX: role dari user.role karena store tidak punya role terpisah ──
   const role                 = user?.role
   const handleLogout         = () => { logout(); navigate('/login') }
@@ -106,7 +106,7 @@ function SidebarContent({ nav, collapsed, onClose }) {
       <div className={`flex items-center border-b border-zinc-800 shrink-0
         ${collapsed ? 'justify-center px-3 py-5' : 'justify-between px-5 py-5'}`}>
         {collapsed ? (
-          <div>
+          <Link to={`/${role === 'kasir' ? 'kasir' : role === 'auditor' ? 'auditor' : 'admin'}/dashboard`} className="block cursor-pointer hover:opacity-80 transition-opacity">
             <img src="/PicolloLogo.png" alt="P"
               className="w-8 h-8 rounded-xl object-cover bg-white"
               onError={e => {
@@ -117,10 +117,12 @@ function SidebarContent({ nav, collapsed, onClose }) {
               style={{ display: 'none' }}>
               <span className="text-red-800 font-black text-sm">P</span>
             </div>
-          </div>
+          </Link>
         ) : (
           <>
-            <PicolloLogo size="sm"/>
+            <Link to={`/${role === 'kasir' ? 'kasir' : role === 'auditor' ? 'auditor' : 'admin'}/dashboard`} className="block cursor-pointer hover:opacity-80 transition-opacity">
+              <PicolloLogo size="sm"/>
+            </Link>
             {onClose && (
               <button onClick={onClose} className="text-zinc-500 hover:text-white lg:hidden ml-2">
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -145,6 +147,28 @@ function SidebarContent({ nav, collapsed, onClose }) {
             <p className="text-amber-400 text-xs font-semibold">Akses Read Only</p>
           </div>
           <p className="text-amber-600 text-xs mt-0.5">Tidak dapat mengubah data</p>
+        </div>
+      )}
+
+      {/* Outlet Switcher untuk Auditor */}
+      {!collapsed && role === 'auditor' && outlets?.length > 0 && (
+        <div className="px-3 mt-3 shrink-0">
+          <label className="text-zinc-500 text-[10px] font-bold uppercase tracking-wider mb-1.5 block px-1">Outlet Aktif</label>
+          <div className="relative">
+            <select 
+              value={activeOutletId}
+              onChange={(e) => setActiveOutletId(e.target.value)}
+              className="w-full bg-zinc-800 text-zinc-300 text-xs font-semibold rounded-xl pl-3 pr-8 py-2.5 border border-zinc-700/50 focus:outline-none focus:border-red-500/50 appearance-none cursor-pointer hover:bg-zinc-700/50 transition-colors"
+            >
+              <option value="">Semua Outlet ({outlets.length})</option>
+              {outlets.map(o => (
+                <option key={o.id} value={o.id}>{o.nama}</option>
+              ))}
+            </select>
+            <div className="absolute inset-y-0 right-0 flex items-center pr-2.5 pointer-events-none text-zinc-500">
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+            </div>
+          </div>
         </div>
       )}
 
@@ -210,7 +234,7 @@ export default function Layout({ children }) {
   const [notifOpen, setNotifOpen]     = useState(false)
   const [profileOpen, setProfileOpen] = useState(false)
 
-  const { user, logout }  = useAuthStore()
+  const { user, logout, outlets }  = useAuthStore()
   // ── FIX: role dari user.role ──
   const role               = user?.role
   const displayName        = getUserName(user)
@@ -276,7 +300,10 @@ export default function Layout({ children }) {
 
             <h1 className="text-sm sm:text-base font-bold text-zinc-900">
               Picollo{' '}
-              <span className="text-zinc-400 font-normal hidden sm:inline">— {nav.label}</span>
+              <span className="text-zinc-400 font-normal hidden sm:inline">
+                — {nav.label}
+                {role !== 'admin' && outlets?.[0]?.nama ? ` (${outlets[0].nama})` : ''}
+              </span>
             </h1>
           </div>
 
@@ -330,7 +357,7 @@ export default function Layout({ children }) {
                 <div className="relative" ref={profileRef}>
                   <button onClick={() => { setProfileOpen(!profileOpen); setNotifOpen(false) }}
                     className="flex items-center gap-2 p-1.5 hover:bg-zinc-100 rounded-xl transition-colors">
-                    <Avatar foto={user?.foto} user={user} size="sm"/>
+                    <Avatar foto={user?.avatar_url || user?.foto} user={user} size="sm"/>
                     <svg className="w-4 h-4 text-zinc-400 hidden sm:block" fill="none"
                       stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7"/>

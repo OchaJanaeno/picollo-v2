@@ -3,7 +3,9 @@ import Layout from '../../components/Layout'
 import { rekapService } from '../../services/rekapService'
 import { transaksiService } from '../../services/transaksiService'
 import { logKoreksiService } from '../../services/logKoreksiService'
+import { laporanService } from '../../services/laporanService'
 import useAuthStore from '../../store/authStore'
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts'
 
 const formatRupiah = (num) => {
   if (!num && num !== 0) return '-'
@@ -106,12 +108,49 @@ function ModalKoreksi({ transaksi, onClose, onSuccess }) {
   )
 }
 
+// ── Modal Konfirmasi Kirim ──
+function ModalKonfirmasiKirim({ onClose, onConfirm, loading }) {
+  return (
+    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+      <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl overflow-hidden">
+        <div className="px-6 py-5 border-b border-zinc-100 flex items-center justify-between bg-zinc-50/50">
+          <div>
+            <h3 className="font-bold text-zinc-900 text-lg">Konfirmasi Kirim Rekap</h3>
+          </div>
+          <button onClick={onClose} disabled={loading} className="w-8 h-8 flex items-center justify-center rounded-full bg-zinc-200/50 text-zinc-500 hover:bg-zinc-200 hover:text-zinc-700 transition-colors">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+          </button>
+        </div>
+
+        <div className="p-6 space-y-5">
+          <p className="text-sm text-zinc-600">
+            Apakah Anda yakin ingin mengirim rekap harian ini ke admin? Data yang sudah dikirim tidak dapat diubah kembali.
+          </p>
+
+          <div className="flex gap-3 pt-2">
+            <button type="button" onClick={onClose} disabled={loading}
+              className="flex-1 bg-zinc-100 text-zinc-700 font-bold py-3.5 rounded-xl text-sm hover:bg-zinc-200 transition-colors">
+              Batal
+            </button>
+            <button type="button" onClick={onConfirm} disabled={loading}
+              className="flex-1 bg-red-800 hover:bg-red-900 disabled:bg-zinc-300 disabled:text-zinc-500 text-white font-bold py-3.5 rounded-xl text-sm transition-colors shadow-lg shadow-red-900/20">
+              {loading ? 'Mengirim...' : 'Kirim Laporan'}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function KasirRekapHarian() {
   const [data, setData] = useState(null)
+  const [aktivitasPerJam, setAktivitasPerJam] = useState([])
   const [loading, setLoading] = useState(true)
   const [sending, setSending] = useState(false)
   const [sent, setSent] = useState(false)
   const [selectedKoreksi, setSelectedKoreksi] = useState(null)
+  const [showConfirmKirim, setShowConfirmKirim] = useState(false)
   const { user, outlets } = useAuthStore()
 
   useEffect(() => { fetchData() }, [])
@@ -119,15 +158,42 @@ export default function KasirRekapHarian() {
   const fetchData = async () => {
     setLoading(true)
     try {
+      const todayLocal = new Date().toLocaleDateString('sv-SE')
+
+      // Fetch transaksi hari ini
       const res = await transaksiService.getAll({ all: true })
       const allTx = res.data.data?.data || res.data.data || []
       
-      const todayLocal = new Date().toLocaleDateString('sv-SE')
       const todayTx = allTx.filter(tx => {
         if (!tx.created_at) return false
         const txDate = new Date(tx.created_at).toLocaleDateString('sv-SE')
         return txDate === todayLocal
       })
+      
+      // Fetch rekap untuk cek status
+      try {
+        const rekapRes = await rekapService.getHarian()
+        const allRekap = rekapRes.data.data?.data || rekapRes.data.data || []
+        const isSentToday = allRekap.some(r => {
+          const rDate = new Date(r.tanggal).toLocaleDateString('sv-SE')
+          return rDate === todayLocal
+        })
+        if (isSentToday) setSent(true)
+      } catch (err) {
+        console.error('Gagal memuat status rekap', err)
+      }
+
+      // Fetch aktivitas per jam
+      try {
+        const reportRes = await laporanService.getKeuangan({
+          start_date: todayLocal,
+          end_date: todayLocal,
+          outlet_id: user?.outlet_id || outlets?.[0]?.id
+        })
+        setAktivitasPerJam(reportRes.data.data?.aktivitas_per_jam || [])
+      } catch (err) {
+        console.error('Gagal memuat aktivitas per jam', err)
+      }
       
       const totalOmzet = todayTx.reduce((sum, tx) => sum + (Number(tx.total_amount) || 0), 0)
       const totalQris = todayTx.filter(tx => tx.metode_pembayaran === 'qris').reduce((sum, tx) => sum + (Number(tx.total_amount) || 0), 0)
@@ -171,6 +237,8 @@ export default function KasirRekapHarian() {
         tanggal: todayLocal,
       })
       setSent(true)
+      setShowConfirmKirim(false)
+      alert('Berhasil! Rekap harian telah dikirim ke Admin.')
     } catch (err) {
       console.error('Kirim rekap error:', err)
       alert('Gagal kirim rekap: ' + (err.response?.data?.message || err.message))
@@ -185,7 +253,7 @@ export default function KasirRekapHarian() {
             <h2 className="text-2xl sm:text-3xl font-extrabold text-zinc-900 tracking-tight">Rekap Harian</h2>
             <p className="text-zinc-500 text-sm mt-1">Laporan transaksi hari ini untuk disetorkan ke Admin.</p>
           </div>
-          <button onClick={handleKirim} disabled={sending || sent || !data}
+          <button onClick={() => setShowConfirmKirim(true)} disabled={sending || sent || !data}
             className={`flex items-center gap-2 px-6 py-3 rounded-2xl text-sm font-bold transition-all shadow-xl
               ${sent ? 'bg-green-500 text-white shadow-green-500/20' : 'bg-red-800 hover:bg-red-900 shadow-red-900/20 disabled:bg-zinc-200 disabled:text-zinc-400 disabled:shadow-none text-white'}`}>
             {sent ? (
@@ -226,6 +294,30 @@ export default function KasirRekapHarian() {
                   <p className="text-xl sm:text-2xl font-bold">{s.val}</p>
                 </div>
               ))}
+            </div>
+
+            {/* Grafik Aktivitas per Jam (Transaksi) */}
+            <div className="bg-white rounded-3xl border border-zinc-100 shadow-sm p-6">
+              <h3 className="font-bold text-zinc-900 text-sm mb-1">Aktivitas Transaksi per Jam</h3>
+              <p className="text-zinc-400 text-xs mb-6">
+                Pantau jam sibuk Anda hari ini untuk evaluasi performa.
+              </p>
+              {aktivitasPerJam.length === 0 ? (
+                <div className="h-52 flex items-center justify-center text-zinc-400 text-sm bg-zinc-50 rounded-xl">
+                  Belum ada data aktivitas
+                </div>
+              ) : (
+                <ResponsiveContainer width="100%" height={220}>
+                  <BarChart data={aktivitasPerJam} margin={{ top: 5, right: 5, bottom: 0, left: -20 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f4f4f5" vertical={false} />
+                    <XAxis dataKey="jam" tick={{ fontSize: 10, fill: '#a1a1aa' }} axisLine={false} tickLine={false} />
+                    <YAxis tick={{ fontSize: 10, fill: '#a1a1aa' }} axisLine={false} tickLine={false} />
+                    <Tooltip />
+                    <Legend verticalAlign="top" height={36} iconType="circle" wrapperStyle={{ fontSize: '12px', fontWeight: 'bold' }} />
+                    <Bar dataKey="transaksi" name="Total Transaksi" fill="#27272a" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              )}
             </div>
 
             {/* Tabel transaksi hari ini */}
@@ -305,6 +397,14 @@ export default function KasirRekapHarian() {
             setSelectedKoreksi(null)
             fetchData()
           }}
+        />
+      )}
+
+      {showConfirmKirim && (
+        <ModalKonfirmasiKirim
+          loading={sending}
+          onClose={() => setShowConfirmKirim(false)}
+          onConfirm={handleKirim}
         />
       )}
     </Layout>

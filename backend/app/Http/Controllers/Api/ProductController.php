@@ -27,6 +27,19 @@ class ProductController extends Controller
                 }])
                 ->orderByDesc('created_at')
                 ->get();
+
+            // Override harga and modal with pivot values if available
+            foreach ($products as $product) {
+                if ($product->outlets->isNotEmpty()) {
+                    $pivot = $product->outlets->first()->pivot;
+                    if ($pivot->harga !== null) {
+                        $product->harga = $pivot->harga;
+                    }
+                    if ($pivot->modal !== null) {
+                        $product->modal = $pivot->modal;
+                    }
+                }
+            }
         }
 
         return response()->json([
@@ -49,6 +62,17 @@ class ProductController extends Controller
                     $q->whereIn('outlets.id', $outletIds);
                 }])
                 ->find($id);
+
+            // Override harga and modal with pivot values if available
+            if ($product && $product->outlets->isNotEmpty()) {
+                $pivot = $product->outlets->first()->pivot;
+                if ($pivot->harga !== null) {
+                    $product->harga = $pivot->harga;
+                }
+                if ($pivot->modal !== null) {
+                    $product->modal = $pivot->modal;
+                }
+            }
         }
 
         if (!$product) {

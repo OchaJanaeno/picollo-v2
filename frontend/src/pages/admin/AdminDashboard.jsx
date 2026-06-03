@@ -11,20 +11,20 @@ import { outletService } from '../../services/outletService'
 const formatRupiah = (num) => {
   if (!num && num !== 0) return '-'
   if (num >= 1000000) return `Rp ${(num / 1000000).toFixed(1)}jt`
-  if (num >= 1000)    return `Rp ${(num / 1000).toFixed(0)}rb`
+  if (num >= 1000) return `Rp ${(num / 1000).toFixed(0)}rb`
   return `Rp ${num.toLocaleString('id-ID')}`
 }
 
 function StatusBadge({ status }) {
   const map = {
-    verified: { label: 'Verified',  cls: 'bg-green-100 text-green-700' },
-    fraud:    { label: 'Fraud',     cls: 'bg-red-100 text-red-700' },
-    pending:  { label: 'Pending',   cls: 'bg-yellow-100 text-yellow-700' },
-    success:  { label: 'Success',   cls: 'bg-green-100 text-green-700' },
-    voided:   { label: 'Voided',    cls: 'bg-zinc-100 text-zinc-500' },
-    aktif:    { label: 'Aktif',     cls: 'bg-green-100 text-green-700' },
-    warning:  { label: 'Warning',   cls: 'bg-orange-100 text-orange-700' },
-    nonaktif: { label: 'Nonaktif',  cls: 'bg-zinc-100 text-zinc-500' },
+    verified: { label: 'Verified', cls: 'bg-green-100 text-green-700' },
+    fraud: { label: 'Fraud', cls: 'bg-red-100 text-red-700' },
+    pending: { label: 'Pending', cls: 'bg-yellow-100 text-yellow-700' },
+    success: { label: 'Success', cls: 'bg-green-100 text-green-700' },
+    voided: { label: 'Voided', cls: 'bg-zinc-100 text-zinc-500' },
+    aktif: { label: 'Aktif', cls: 'bg-green-100 text-green-700' },
+    warning: { label: 'Warning', cls: 'bg-orange-100 text-orange-700' },
+    nonaktif: { label: 'Nonaktif', cls: 'bg-zinc-100 text-zinc-500' },
   }
   const s = map[status] || map.pending
   return (
@@ -51,19 +51,19 @@ const Skeleton = ({ className }) => (
 )
 
 const STAT_ICONS = {
-  omzet:     "M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z",
+  omzet: "M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z",
   transaksi: "M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2",
-  outlet:    "M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4",
-  anomali:   "M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z",
+  outlet: "M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4",
+  anomali: "M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z",
 }
 
 export default function AdminDashboard() {
-  const [period, setPeriod]         = useState('6bln')
-  const [loading, setLoading]       = useState(true)
-  const [stats, setStats]           = useState(null)
+  const [period, setPeriod] = useState('6bln')
+  const [loading, setLoading] = useState(true)
+  const [stats, setStats] = useState(null)
   const [transactions, setTransactions] = useState([])
-  const [outlets, setOutlets]       = useState([])
-  const [chartData, setChartData]   = useState([])
+  const [outlets, setOutlets] = useState([])
+  const [chartData, setChartData] = useState([])
 
   useEffect(() => { fetchDashboard() }, [period])
 
@@ -100,40 +100,37 @@ export default function AdminDashboard() {
 
   const statCards = [
     {
-      key:    'omzet',
-      label:  'Pendapatan Hari Ini',
-      value:  loading ? null : formatRupiah(stats?.pendapatan_hari_ini || 0),
-      change: stats?.total_pendapatan ? `Total: ${formatRupiah(stats.total_pendapatan)}` : '-',
-      up:     null,
-      color:  'bg-red-800',
-      icon:   STAT_ICONS.omzet,
+      key: 'Omzet',
+      label: 'Omzet Hari Ini',
+      value: loading ? null : formatRupiah(stats?.pendapatan_hari_ini || 0),
+      up: null,
+      color: 'bg-red-800',
+      icon: STAT_ICONS.omzet,
     },
     {
-      key:    'transaksi',
-      label:  'Transaksi Hari Ini',
-      value:  loading ? null : (stats?.transaksi_hari_ini ?? '-'),
+      key: 'transaksi',
+      label: 'Transaksi Hari Ini',
+      value: loading ? null : (stats?.transaksi_hari_ini ?? '-'),
+      up: null,
+      color: 'bg-zinc-800',
+      icon: STAT_ICONS.transaksi,
+    },
+    {
+      key: 'outlet',
+      label: 'Outlet Aktif',
+      value: loading ? null : (stats?.total_outlet_aktif ?? '-'),
+      up: null,
+      color: 'bg-zinc-700',
+      icon: STAT_ICONS.outlet,
+    },
+    {
+      key: 'Pendapatan',
+      label: 'Perkiraan Pendapatan',
+      value: loading ? null : formatRupiah(stats?.estimasi_pendapatan || 0),
       change: '-',
-      up:     null,
-      color:  'bg-zinc-800',
-      icon:   STAT_ICONS.transaksi,
-    },
-    {
-      key:    'outlet',
-      label:  'Outlet Aktif',
-      value:  loading ? null : (stats?.total_outlet_aktif ?? '-'),
-      change: stats?.total_produk_aktif ? `${stats.total_produk_aktif} produk aktif` : '-',
-      up:     null,
-      color:  'bg-zinc-700',
-      icon:   STAT_ICONS.outlet,
-    },
-    {
-      key:    'keuntungan',
-      label:  'Est. Keuntungan Stok',
-      value:  loading ? null : formatRupiah(stats?.estimasi_keuntungan || 0),
-      change: '-',
-      up:     null,
-      color:  'bg-red-900',
-      icon:   STAT_ICONS.anomali,
+      up: null,
+      color: 'bg-red-900',
+      icon: STAT_ICONS.anomali,
     },
   ]
 
@@ -145,7 +142,7 @@ export default function AdminDashboard() {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
             <h2 className="text-xl sm:text-2xl font-bold text-zinc-900">Dashboard</h2>
-            <p className="text-zinc-500 text-sm mt-0.5">Selamat datang, Owner</p>
+            <p className="text-zinc-500 text-sm mt-0.5">Selamat datang, berikut informasi terbaru mengenai bisnis anda!</p>
           </div>
           <div className="flex items-center gap-2">
             {['7hr', '30hr', '6bln'].map(p => (
@@ -198,7 +195,7 @@ export default function AdminDashboard() {
               <AreaChart data={chartData} margin={{ top: 5, right: 5, bottom: 0, left: -20 }}>
                 <defs>
                   <linearGradient id="omzetGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%"  stopColor="#991b1b" stopOpacity={0.3} />
+                    <stop offset="5%" stopColor="#991b1b" stopOpacity={0.3} />
                     <stop offset="95%" stopColor="#991b1b" stopOpacity={0} />
                   </linearGradient>
                 </defs>
@@ -223,7 +220,7 @@ export default function AdminDashboard() {
             <ResponsiveContainer width="100%" height={200}>
               <BarChart
                 data={outlets.map(o => ({
-                  nama:  o.nama?.split(' ')[0] || '-',
+                  nama: o.nama?.split(' ')[0] || '-',
                   omzet: parseFloat(o.total_omzet || 0),
                 }))}
                 margin={{ top: 5, right: 5, bottom: 0, left: -20 }}>
@@ -253,7 +250,7 @@ export default function AdminDashboard() {
             </div>
             <div className="divide-y divide-zinc-50">
               {loading ? (
-                [1,2,3].map(i => (
+                [1, 2, 3].map(i => (
                   <div key={i} className="flex items-center gap-3 px-5 py-3">
                     <div className="animate-pulse bg-zinc-100 rounded-lg w-8 h-8 shrink-0" />
                     <div className="flex-1 space-y-1">
@@ -304,7 +301,7 @@ export default function AdminDashboard() {
             </div>
             <div className="divide-y divide-zinc-50">
               {loading ? (
-                [1,2,3].map(i => (
+                [1, 2, 3].map(i => (
                   <div key={i} className="flex items-center gap-3 px-5 py-3.5">
                     <div className="animate-pulse bg-zinc-100 rounded-lg w-8 h-8 shrink-0" />
                     <div className="flex-1 space-y-1">

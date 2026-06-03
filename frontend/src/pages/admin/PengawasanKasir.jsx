@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import Layout from '../../components/Layout'
+import api from '../../services/api'
 import { kasirService } from '../../services/kasirService'
-import { transaksiService } from '../../services/transaksiService'
 
 const formatRupiah = (num) => {
   if (!num && num !== 0) return '-'
@@ -43,16 +43,17 @@ export default function AdminPengawasanKasir() {
     setLoadingActivity(true)
     setActivities([])
     try {
-      const res = await transaksiService.getAll()
-      const allTx = res.data.data?.data || res.data.data || []
-      // Filter transaksi milik kasir ini
-      const kasirTx = allTx.filter(tx => tx.user_id === kasir.id || tx.kasir?.id === kasir.id)
-      const mapped = kasirTx.map(tx => ({
-        id_transaksi: tx.transaction_code || tx.id,
-        metode: tx.metode_pembayaran === 'qris' ? 'QRIS' : tx.metode_pembayaran === 'transfer' ? 'TF' : 'Tunai',
-        waktu: tx.created_at ? new Date(tx.created_at).toLocaleString('id-ID', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: 'short' }) : '-',
-        total: formatRupiah(tx.total_amount),
-        status: tx.hash_verification?.status || (tx.status === 'success' ? 'verified' : tx.status || 'pending'),
+      const res = await api.get(`/kasir/${kasir.id}/aktivitas`)
+      const raw = res.data.data || []
+      
+      const mapped = raw.map(a => ({
+        type: a.type,
+        title: a.title,
+        subtitle: a.subtitle,
+        waktu: new Date(a.timestamp).toLocaleString('id-ID', { 
+          hour: '2-digit', minute: '2-digit', day: '2-digit', month: 'short' 
+        }),
+        status: a.status
       }))
       setActivities(mapped)
     } catch (err) {
@@ -145,21 +146,39 @@ export default function AdminPengawasanKasir() {
                   ) : activities.map((a, i) => (
                     <div key={i} className="flex items-center justify-between px-5 py-3.5 hover:bg-zinc-50 transition-colors">
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 bg-zinc-100 rounded-lg flex items-center justify-center shrink-0">
-                          <span className="text-xs font-mono font-bold text-zinc-600">{a.metode === 'QRIS' ? 'QR' : 'TN'}</span>
+                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0
+                          ${a.type === 'login' ? 'bg-green-100 text-green-700' :
+                            a.type === 'logout' ? 'bg-zinc-100 text-zinc-500' : 'bg-red-100 text-red-700'}`}>
+                          {a.type === 'login' && (
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+                            </svg>
+                          )}
+                          {a.type === 'logout' && (
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                            </svg>
+                          )}
+                          {a.type === 'koreksi' && (
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                            </svg>
+                          )}
                         </div>
                         <div>
-                          <p className="text-sm font-semibold text-zinc-900">{a.id_transaksi}</p>
-                          <p className="text-xs text-zinc-500">{a.waktu}</p>
+                          <p className="text-sm font-semibold text-zinc-900">{a.title}</p>
+                          <p className="text-xs text-zinc-500">{a.subtitle}</p>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-semibold text-zinc-900">{a.total}</span>
-                        <span className={`text-xs font-semibold px-2.5 py-1 rounded-full
-                          ${a.status === 'verified' ? 'bg-green-100 text-green-700' :
-                            a.status === 'fraud' ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700'}`}>
-                          {a.status}
-                        </span>
+                      <div className="flex flex-col items-end gap-1">
+                        <span className="text-xs font-semibold text-zinc-500">{a.waktu}</span>
+                        {a.type === 'koreksi' && a.status && (
+                          <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full
+                            ${a.status === 'approved' ? 'bg-green-100 text-green-700' :
+                              a.status === 'rejected' ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700'}`}>
+                            {a.status}
+                          </span>
+                        )}
                       </div>
                     </div>
                   ))}

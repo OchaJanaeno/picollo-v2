@@ -22,7 +22,7 @@ export default function AdminVerifikasi() {
           'Outlet': data.transaction?.outlet?.nama || '-',
           'Total': data.transaction?.total_amount ? `Rp ${Number(data.transaction.total_amount).toLocaleString('id-ID')}` : '-',
           'Status Hash': data.status || '-',
-          'Hash': data.hash_sha256 ? data.hash_sha256.substring(0, 24) + '...' : '-',
+          'Hash': data.hash_sha256 || hash,
         }
       })
     } catch (err) {
@@ -32,103 +32,108 @@ export default function AdminVerifikasi() {
 
   return (
     <Layout>
-      <div className="space-y-6 max-w-2xl">
-        <div>
-          <h2 className="text-xl sm:text-2xl font-bold text-zinc-900">Verifikasi Blockchain</h2>
-          <p className="text-zinc-500 text-sm mt-0.5">Verifikasi keaslian data transaksi melalui hash blockchain</p>
+      <div className="max-w-3xl mx-auto space-y-8">
+        
+        {/* Header Section */}
+        <div className="bg-gradient-to-br from-zinc-900 to-zinc-800 rounded-3xl p-8 sm:p-10 text-white shadow-2xl relative overflow-hidden">
+          <div className="absolute -right-10 -top-10 w-64 h-64 bg-red-500/10 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute -left-10 -bottom-10 w-48 h-48 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
+          
+          <div className="relative z-10">
+            <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center mb-6 backdrop-blur-md border border-white/10">
+              <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+              </svg>
+            </div>
+            <h2 className="text-2xl sm:text-4xl font-extrabold tracking-tight mb-2">Verifikasi Blockchain</h2>
+            <p className="text-zinc-400 max-w-lg text-sm sm:text-base leading-relaxed">
+              Pastikan keaslian dan integritas data transaksi. Masukkan Hash SHA-256 untuk memvalidasi record di jaringan blockchain internal.
+            </p>
+          </div>
         </div>
 
-        {/* Form */}
-        <div className="bg-white rounded-2xl border border-zinc-200 p-6">
-          <h3 className="font-bold text-zinc-900 mb-1">Input Hash Transaksi</h3>
-          <p className="text-zinc-500 text-sm mb-5">Masukkan hash SHA-256 dari transaksi yang ingin diverifikasi</p>
-          <form onSubmit={handleVerify} className="space-y-4">
-            <div>
-              <label className="text-zinc-700 text-sm font-semibold mb-1.5 block">Hash Transaksi</label>
-              <input type="text" value={hash} onChange={e => setHash(e.target.value)}
-                placeholder="Contoh: abc123hash..."
-                className="w-full border border-zinc-300 rounded-xl px-4 py-3 text-sm font-mono
-                           text-zinc-900 placeholder-zinc-400 focus:outline-none focus:border-red-800 transition-colors" />
-            </div>
-            <button type="submit" disabled={loading || !hash.trim()}
-              className="w-full bg-red-800 hover:bg-red-900 disabled:bg-zinc-300 text-white
-                         font-semibold py-3 rounded-xl text-sm transition-colors flex items-center justify-center gap-2">
-              {loading ? (
-                <>
-                  <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                  </svg>
-                  Memverifikasi...
-                </>
-              ) : (
-                <>
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                      d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                  </svg>
-                  Verifikasi Hash
-                </>
-              )}
-            </button>
-          </form>
-        </div>
-
-        {/* Result */}
-        {result && (
-          <div className={`rounded-2xl p-6 border ${result.valid ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
-            <div className="flex items-center gap-3 mb-4">
-              <div className={`w-12 h-12 rounded-full flex items-center justify-center
-                ${result.valid ? 'bg-green-100' : 'bg-red-100'}`}>
-                {result.valid
-                  ? <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
-                  : <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                }
-              </div>
-              <div>
-                <p className={`font-bold text-lg ${result.valid ? 'text-green-800' : 'text-red-800'}`}>
-                  {result.valid ? 'Transaksi Valid' : 'Fraud Detected!'}
-                </p>
-                <p className={`text-sm ${result.valid ? 'text-green-600' : 'text-red-600'}`}>
-                  {result.valid ? 'Data transaksi cocok dengan blockchain' : result.error || 'Hash tidak cocok dengan blockchain'}
-                </p>
-              </div>
-            </div>
-            {result.valid && result.data && (
-              <div className="bg-white rounded-xl p-4 space-y-2">
-                {Object.entries(result.data).map(([k, v]) => (
-                  <div key={k} className="flex justify-between text-sm">
-                    <span className="text-zinc-500 capitalize">{k.replace(/_/g, ' ')}</span>
-                    <span className="text-zinc-900 font-medium font-mono">{v}</span>
+        <div className="space-y-6">
+            <div className="bg-white rounded-3xl border border-zinc-100 shadow-sm p-6 sm:p-8">
+              <form onSubmit={handleVerify} className="space-y-6">
+                <div>
+                  <label className="block text-xs font-bold text-zinc-700 uppercase tracking-wider mb-2">
+                    Hash Transaksi (SHA-256)
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                      <svg className="w-5 h-5 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+                      </svg>
+                    </div>
+                    <input 
+                      type="text" 
+                      value={hash} 
+                      onChange={e => setHash(e.target.value)}
+                      placeholder="Masukkan hash..."
+                      className="w-full bg-zinc-50 border border-zinc-200 rounded-2xl pl-12 pr-4 py-4 text-sm font-mono text-zinc-900 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-red-800/20 focus:border-red-800 transition-all" 
+                    />
                   </div>
-                ))}
+                </div>
+                
+                <button type="submit" disabled={loading || !hash.trim()}
+                  className="w-full bg-red-800 hover:bg-red-900 disabled:bg-zinc-200 disabled:text-zinc-400 text-white font-bold py-4 rounded-2xl text-sm transition-all shadow-xl shadow-red-900/20 disabled:shadow-none flex items-center justify-center gap-2 group">
+                  {loading ? (
+                    <>
+                      <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                      </svg>
+                      Memverifikasi...
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-5 h-5 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                      </svg>
+                      Mulai Verifikasi
+                    </>
+                  )}
+                </button>
+              </form>
+            </div>
+
+            {/* Result Area */}
+            {result && (
+              <div className={`rounded-3xl p-6 sm:p-8 border shadow-lg overflow-hidden relative transition-all duration-500 animate-in fade-in slide-in-from-bottom-4
+                ${result.valid ? 'bg-gradient-to-br from-green-50 to-emerald-50 border-green-200 shadow-green-500/10' : 'bg-gradient-to-br from-red-50 to-rose-50 border-red-200 shadow-red-500/10'}`}>
+                
+                <div className="flex flex-col sm:flex-row gap-5 items-start sm:items-center mb-6">
+                  <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 shadow-sm
+                    ${result.valid ? 'bg-green-500 text-white shadow-green-500/30' : 'bg-red-500 text-white shadow-red-500/30'}`}>
+                    {result.valid
+                      ? <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" /></svg>
+                      : <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" /></svg>
+                    }
+                  </div>
+                  <div>
+                    <h3 className={`text-xl font-extrabold ${result.valid ? 'text-green-800' : 'text-red-800'}`}>
+                      {result.valid ? 'Verifikasi Berhasil' : 'Peringatan: Fraud Detected!'}
+                    </h3>
+                    <p className={`text-sm mt-1 font-medium ${result.valid ? 'text-green-600/80' : 'text-red-600/80'}`}>
+                      {result.valid ? 'Integritas data transaksi valid dan cocok dengan blockchain.' : result.error || 'Data telah dimanipulasi atau hash tidak dikenali.'}
+                    </p>
+                  </div>
+                </div>
+
+                {result.valid && result.data && (
+                  <div className="bg-white/60 backdrop-blur-md rounded-2xl p-5 border border-white/40 space-y-3">
+                    {Object.entries(result.data).map(([k, v]) => (
+                      <div key={k} className="flex flex-col sm:flex-row justify-between sm:items-center py-2 border-b border-zinc-100 last:border-0 last:pb-0">
+                        <span className="text-xs font-bold text-zinc-500 uppercase tracking-wider">{k}</span>
+                        <span className={`text-sm font-mono mt-1 sm:mt-0 ${k === 'Hash' ? 'text-xs text-zinc-500 break-all max-w-[250px] text-right' : 'text-zinc-900 font-bold'}`}>
+                          {v}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
-          </div>
-        )}
-
-        {/* Info */}
-        <div className="bg-zinc-50 rounded-2xl p-5 border border-zinc-200">
-          <h4 className="font-semibold text-zinc-700 text-sm mb-3">Cara kerja verifikasi blockchain:</h4>
-          <div className="space-y-2">
-            {[
-              'Hash transaksi dikirim ke sistem verifikasi',
-              'Sistem mengambil data dari database internal',
-              'Data dibandingkan dengan record di blockchain',
-              'Jika cocok → Verified. Jika tidak → Fraud Detected',
-            ].map((s, i) => (
-              <div key={i} className="flex items-start gap-2.5">
-                <div className="w-5 h-5 bg-red-100 rounded-full flex items-center justify-center shrink-0 mt-0.5">
-                  <span className="text-red-800 text-xs font-bold">{i + 1}</span>
-                </div>
-                <p className="text-zinc-600 text-sm">{s}</p>
-              </div>
-            ))}
-          </div>
         </div>
       </div>
     </Layout>

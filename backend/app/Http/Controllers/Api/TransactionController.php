@@ -25,6 +25,26 @@ class TransactionController extends Controller
             ->with(['outlet:id,nama', 'kasir:id,name', 'items'])
             ->orderByDesc('created_at');
 
+        // Filter outlet spesifik jika ada
+        if ($request->filled('outlet_id') && $outletIds->contains($request->outlet_id)) {
+            $query->where('outlet_id', $request->outlet_id);
+        }
+
+        // Filter kasir spesifik jika ada
+        if ($request->filled('kasir_id')) {
+            $query->where('user_id', $request->kasir_id);
+        }
+
+        // Filter tanggal
+        if ($request->filled('start_date') && $request->filled('end_date')) {
+            $query->whereBetween('created_at', [
+                $request->start_date . ' 00:00:00',
+                $request->end_date . ' 23:59:59'
+            ]);
+        } elseif ($request->filled('date')) {
+            $query->whereDate('created_at', $request->date);
+        }
+
         // Kasir hanya lihat transaksi milik sendiri
         if ($user->hasRole('kasir')) {
             $query->where('user_id', $user->id);

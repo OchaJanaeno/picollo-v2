@@ -25,7 +25,7 @@ class Product extends Model
 
     public function outlets()
     {
-        return $this->belongsToMany(Outlet::class)->withPivot('stok');
+        return $this->belongsToMany(Outlet::class)->withPivot('stok', 'harga', 'modal');
     }
 
     public function transactionItems()

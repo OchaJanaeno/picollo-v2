@@ -8,6 +8,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rules\Password as PasswordRule;
+use App\Models\AuditLog;
+use App\Models\CorrectionLog;
 
 class KasirController extends Controller
 {
@@ -147,6 +149,7 @@ class KasirController extends Controller
             'no_telepon' => 'nullable|string|max:20',
             'is_active'  => 'sometimes|boolean',
             'outlet_id'  => 'sometimes|integer|exists:outlets,id',
+            'avatar'     => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
             'password'   => [
                 'sometimes',
                 'confirmed',
@@ -172,6 +175,20 @@ class KasirController extends Controller
         if ($request->has('no_telepon')) $updateData['no_telepon'] = $request->no_telepon;
         if ($request->has('is_active'))  $updateData['is_active']  = $request->boolean('is_active');
         if ($request->password)          $updateData['password']   = Hash::make($request->password);
+
+        if ($request->hasFile('avatar')) {
+            $file = $request->file('avatar');
+            $filename = 'avatar_' . $kasir->id . '_' . time() . '.' . $file->getClientOriginalExtension();
+            $file->move(public_path('avatars'), $filename);
+            
+            if ($kasir->avatar_url) {
+                $oldPath = public_path(parse_url($kasir->avatar_url, PHP_URL_PATH));
+                if (file_exists($oldPath) && is_file($oldPath)) {
+                    @unlink($oldPath);
+                }
+            }
+            $updateData['avatar_url'] = url('avatars/' . $filename);
+        }
 
         if (!empty($updateData)) {
             $kasir->update($updateData);
@@ -216,6 +233,61 @@ class KasirController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Akun kasir berhasil dihapus.',
+        ]);
+    }
+
+    // GET aktivitas kasir (login, logout, koreksi)
+    public function getActivities(Request $request, $id)
+    {
+        $outletIds = $request->user()->outlets()->pluck('outlets.id');
+
+        $kasir = User::role('kasir')
+            ->whereHas('outlets', fn($q) => $q->whereIn('outlets.id', $outletIds))
+            ->find($id);
+
+        if (!$kasir) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Kasir tidak ditemukan.',
+            ], 404);
+        }
+
+        // Ambil aktivitas login & logout
+        $auditLogs = AuditLog::where('user_id', $id)
+            ->whereIn('action', ['login', 'logout'])
+            ->get()
+            ->map(function ($log) {
+                return [
+                    'type' => $log->action, // 'login' or 'logout'
+                    'title' => ucfirst($log->action),
+                    'subtitle' => 'Sistem Kasir',
+                    'timestamp' => $log->created_at,
+                ];
+            });
+
+        // Ambil riwayat koreksi
+        $correctionLogs = CorrectionLog::with('transaction:id,transaction_code')
+            ->where('corrected_by', $id)
+            ->get()
+            ->map(function ($log) {
+                $trxCode = $log->transaction ? $log->transaction->transaction_code : 'Unknown';
+                return [
+                    'type' => 'koreksi',
+                    'title' => 'Koreksi Transaksi ' . $trxCode,
+                    'subtitle' => $log->alasan ?: 'Tanpa alasan',
+                    'timestamp' => $log->created_at,
+                    'status' => $log->status // pending, approved, rejected
+                ];
+            });
+
+        // Gabungkan dan urutkan
+        $activities = $auditLogs->concat($correctionLogs)
+            ->sortByDesc('timestamp')
+            ->values();
+
+        return response()->json([
+            'success' => true,
+            'data' => $activities,
         ]);
     }
 }

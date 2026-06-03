@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react'
+import { useSearchParams, useNavigate } from 'react-router-dom'
+import useAuthStore from '../../store/authStore'
 import Layout from '../../components/Layout'
 import { transaksiService } from '../../services/transaksiService'
 import LoadingSpinner from '../../components/LoadingSpinner'
@@ -14,6 +16,14 @@ const StatusBadge = ({ status }) => {
 }
 
 export default function AdminTransaksi() {
+  const { outlets } = useAuthStore()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const navigate = useNavigate()
+
+  // Default ke query params jika ada, jika tidak kosong
+  const [filterOutlet, setFilterOutlet] = useState(searchParams.get('outlet_id') || '')
+  const [filterDate, setFilterDate] = useState(searchParams.get('date') || '')
+
   const [data, setData] = useState([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
@@ -21,7 +31,15 @@ export default function AdminTransaksi() {
   const [filterMetode, setFilterMetode] = useState('semua')
   const [detail, setDetail] = useState(null)
 
-  useEffect(() => { fetchData() }, [])
+  useEffect(() => { 
+    // Update URL agar bisa di-share atau direfresh
+    const newParams = new URLSearchParams()
+    if (filterOutlet) newParams.set('outlet_id', filterOutlet)
+    if (filterDate) newParams.set('date', filterDate)
+    setSearchParams(newParams, { replace: true })
+    
+    fetchData() 
+  }, [filterOutlet, filterDate])
 
   const formatRupiah = (num) => {
     if (!num && num !== 0) return '-'
@@ -31,7 +49,11 @@ export default function AdminTransaksi() {
   const fetchData = async () => {
     setLoading(true)
     try {
-      const res = await transaksiService.getAll()
+      const params = { all: true }
+      if (filterOutlet) params.outlet_id = filterOutlet
+      if (filterDate) params.date = filterDate
+
+      const res = await transaksiService.getAll(params)
       const raw = res.data.data?.data || res.data.data || []
       const mapped = raw.map(tx => ({
         id: tx.transaction_code || tx.id,
@@ -74,15 +96,38 @@ export default function AdminTransaksi() {
 
         {/* Filter */}
         <div className="bg-white rounded-2xl border border-zinc-200 p-4 space-y-3">
-          <div className="relative">
-            <svg className="w-4 h-4 text-zinc-400 absolute left-3.5 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0" />
-            </svg>
-            <input type="text" value={search} onChange={e => setSearch(e.target.value)}
-              placeholder="Cari ID transaksi, kasir, outlet..."
-              className="w-full border border-zinc-300 rounded-xl pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:border-red-800 transition-colors" />
+          <div className="flex flex-col md:flex-row gap-3">
+            <div className="relative flex-1">
+              <svg className="w-4 h-4 text-zinc-400 absolute left-3.5 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0" />
+              </svg>
+              <input type="text" value={search} onChange={e => setSearch(e.target.value)}
+                placeholder="Cari ID transaksi, kasir, outlet..."
+                className="w-full border border-zinc-300 rounded-xl pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:border-red-800 transition-colors" />
+            </div>
+            <select
+              value={filterOutlet}
+              onChange={e => setFilterOutlet(e.target.value)}
+              className="bg-white border border-zinc-300 text-zinc-700 text-sm font-semibold rounded-xl px-4 py-2.5 focus:outline-none focus:border-red-800 transition-colors shrink-0"
+            >
+              <option value="">Semua Outlet</option>
+              {outlets?.map(o => (
+                <option key={o.id} value={o.id}>{o.nama}</option>
+              ))}
+            </select>
+            <input 
+              type="date"
+              value={filterDate}
+              onChange={e => setFilterDate(e.target.value)}
+              className="bg-white border border-zinc-300 text-zinc-700 text-sm font-semibold rounded-xl px-4 py-2.5 focus:outline-none focus:border-red-800 transition-colors shrink-0"
+            />
+            {(filterOutlet || filterDate) && (
+              <button onClick={() => { setFilterOutlet(''); setFilterDate('') }} className="text-zinc-500 hover:text-red-700 text-sm font-semibold px-2">
+                Reset
+              </button>
+            )}
           </div>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2 pt-2 border-t border-zinc-100">
             <div className="flex gap-1">
               {['semua', 'verified', 'pending', 'fraud'].map(s => (
                 <button key={s} onClick={() => setFilterStatus(s)}

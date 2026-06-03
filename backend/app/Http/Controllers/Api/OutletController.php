@@ -170,7 +170,7 @@ class OutletController extends Controller
             ], 404);
         }
 
-        $products = $outlet->products()->withPivot('stok')->get();
+        $products = $outlet->products()->withPivot('stok', 'harga', 'modal')->get();
 
         return response()->json([
             'success' => true,
@@ -194,6 +194,8 @@ class OutletController extends Controller
             'products' => 'present|array',
             'products.*.id' => 'required|integer|exists:products,id',
             'products.*.stok' => 'required|integer|min:0',
+            'products.*.harga' => 'nullable|numeric|min:0',
+            'products.*.modal' => 'nullable|numeric|min:0',
         ]);
 
         if ($validator->fails()) {
@@ -206,7 +208,11 @@ class OutletController extends Controller
 
         $syncData = [];
         foreach ($request->products as $item) {
-            $syncData[$item['id']] = ['stok' => $item['stok']];
+            $syncData[$item['id']] = [
+                'stok'  => $item['stok'],
+                'harga' => $item['harga'] ?? null,
+                'modal' => $item['modal'] ?? null,
+            ];
         }
 
         $outlet->products()->sync($syncData);

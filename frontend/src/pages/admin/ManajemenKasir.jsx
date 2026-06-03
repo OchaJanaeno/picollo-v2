@@ -317,14 +317,49 @@ function ModalKredensial({ kasir, onClose }) {
   )
 }
 
-function ModalLihatKredensial({ kasir, onClose }) {
+function ModalLihatKredensial({ kasir, onClose, onUpdate }) {
   const [showPass, setShowPass] = useState(false)
   const [copied, setCopied]     = useState(null)
+  
+  const [isEditing, setIsEditing] = useState(false)
+  const [nama, setNama]           = useState(kasir.nama || '')
+  const [fotoFile, setFotoFile]   = useState(null)
+  const [fotoPreview, setFotoPreview] = useState(kasir.foto || null)
+  const [loading, setLoading]     = useState(false)
+  const fileRef = useRef(null)
 
   const copy = (text, field) => {
     navigator.clipboard.writeText(text)
     setCopied(field)
     setTimeout(() => setCopied(null), 2000)
+  }
+
+  const handleFoto = (file) => {
+    if (!file || !file.type.startsWith('image/')) return
+    setFotoFile(file)
+    const reader = new FileReader()
+    reader.onload = e => setFotoPreview(e.target.result)
+    reader.readAsDataURL(file)
+  }
+
+  const handleSave = async () => {
+    setLoading(true)
+    try {
+      const fd = new FormData()
+      fd.append('name', nama)
+      if (fotoFile) fd.append('avatar', fotoFile)
+      
+      const res = await kasirService.update(kasir.id, fd)
+      const updated = res.data.data
+      onUpdate({
+        ...kasir,
+        nama: updated.name,
+        foto: updated.avatar_url || kasir.foto,
+      })
+      setIsEditing(false)
+    } catch (err) {
+      alert('Gagal update profile: ' + (err.response?.data?.message || err.message))
+    } finally { setLoading(false) }
   }
 
   return (
@@ -335,13 +370,39 @@ function ModalLihatKredensial({ kasir, onClose }) {
             <h3 className="font-bold text-zinc-900">Kredensial Kasir</h3>
             <p className="text-zinc-400 text-xs mt-0.5">{kasir.nama} — {kasir.outlet}</p>
           </div>
-          <button onClick={onClose} className="text-zinc-400 hover:text-zinc-700">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/>
-            </svg>
-          </button>
+          <div className="flex items-center gap-3">
+            <button onClick={() => setIsEditing(!isEditing)} className={`text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors ${isEditing ? 'bg-red-100 text-red-700' : 'bg-zinc-100 text-zinc-700 hover:bg-zinc-200'}`}>
+              {isEditing ? 'Batal Edit' : 'Edit Profile'}
+            </button>
+            <button onClick={onClose} className="text-zinc-400 hover:text-zinc-700">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/>
+              </svg>
+            </button>
+          </div>
         </div>
         <div className="px-6 py-5">
+          {isEditing ? (
+            <div className="mb-5 space-y-4 bg-zinc-50 p-4 rounded-2xl border border-zinc-100">
+              <div className="flex items-center gap-4">
+                <div onClick={() => fileRef.current?.click()} className="w-14 h-14 rounded-full border-2 border-dashed border-zinc-300 flex items-center justify-center overflow-hidden cursor-pointer shrink-0">
+                  {fotoPreview ? <img src={fotoPreview} alt="preview" className="w-full h-full object-cover"/> : <span className="text-xs text-zinc-400">Foto</span>}
+                </div>
+                <div>
+                  <button onClick={() => fileRef.current?.click()} className="text-xs font-semibold text-red-800 hover:text-red-900">Ganti Foto</button>
+                  <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={e => handleFoto(e.target.files[0])}/>
+                </div>
+              </div>
+              <div>
+                <label className="text-zinc-700 text-xs font-bold mb-1.5 block">Nama Kasir</label>
+                <input type="text" value={nama} onChange={e => setNama(e.target.value)} className="w-full border border-zinc-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-red-800" />
+              </div>
+              <button onClick={handleSave} disabled={loading} className="w-full bg-red-800 hover:bg-red-900 text-white font-semibold py-2 rounded-xl text-sm mt-2">
+                {loading ? 'Menyimpan...' : 'Simpan Perubahan'}
+              </button>
+            </div>
+          ) : null}
+
           <div className="bg-zinc-950 rounded-2xl p-5 space-y-3">
             {[
               { label: 'Email',    value: kasir.email, field: 'email', isPass: false },
@@ -477,7 +538,12 @@ export default function AdminManajemenKasir() {
         <ModalKredensial kasir={newKasir} onClose={() => setNewKasir(null)}/>
       )}
       {lihatKredensial && (
-        <ModalLihatKredensial kasir={lihatKredensial} onClose={() => setLihatKredensial(null)}/>
+        <ModalLihatKredensial kasir={lihatKredensial} onClose={() => setLihatKredensial(null)} 
+          onUpdate={(k) => {
+            setData(prev => prev.map(old => old.id === k.id ? k : old));
+            setLihatKredensial(k);
+          }}
+        />
       )}
 
       <div className="space-y-6">
