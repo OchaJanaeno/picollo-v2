@@ -27,6 +27,16 @@ class CorrectionLogController extends Controller
         ->with(['transaction:id,transaction_code', 'correctedBy:id,name', 'outlet:id,nama'])
         ->orderByDesc('created_at');
 
+        // Filter tanggal
+        if ($request->filled('start_date') && $request->filled('end_date')) {
+            $query->whereBetween('created_at', [
+                $request->start_date . ' 00:00:00',
+                $request->end_date . ' 23:59:59'
+            ]);
+        } elseif ($request->filled('date')) {
+            $query->whereDate('created_at', $request->date);
+        }
+
         if ($request->query('all') === 'true') {
             return response()->json(['success' => true, 'data' => $query->get()]);
         }

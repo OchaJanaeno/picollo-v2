@@ -5,6 +5,7 @@ import { laporanService } from '../../services/laporanService'
 import { rekapService } from '../../services/rekapService'
 import useAuthStore from '../../store/authStore'
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Legend } from 'recharts'
+import DateFilter from '../../components/DateFilter'
 
 const formatRupiah = (num) => {
   if (!num && num !== 0) return '-'
@@ -28,18 +29,64 @@ export default function AdminLaporan() {
   const [selectedOutlet, setSelectedOutlet] = useState('')
   const [data, setData] = useState({ revenue: [], byOutlet: [], byProduct: [], aktivitasPerJam: [] })
   const [loading, setLoading] = useState(true)
-  const [period, setPeriod] = useState('bulanan')
+  const [period, setPeriod] = useState('bulan_ini')
   const [exportLoading, setExportLoading] = useState(false)
 
+  const formatPeriodLabel = (p) => {
+    const map = {
+      hari_ini: 'Hari Ini',
+      minggu_ini: 'Minggu Ini',
+      bulan_ini: 'Bulan Ini',
+      tahun: 'Tahun Ini',
+    }
+    return map[p] || p
+  }
+
   const getDateRange = (p) => {
-    const end = new Date()
-    const start = new Date()
-    if (p === 'harian') start.setDate(end.getDate() - 7)
-    else if (p === 'bulanan') start.setMonth(end.getMonth() - 1)
-    else start.setFullYear(end.getFullYear() - 1)
+    const now = new Date()
+    const getLocalFormattedDate = (d) => {
+      const y = d.getFullYear()
+      const m = String(d.getMonth() + 1).padStart(2, '0')
+      const dateVal = String(d.getDate()).padStart(2, '0')
+      return `${y}-${m}-${dateVal}`
+    }
+
+    if (p === 'hari_ini') {
+      const todayStr = getLocalFormattedDate(now)
+      return { start_date: todayStr, end_date: todayStr }
+    } else if (p === 'minggu_ini') {
+      const day = now.getDay()
+      const diff = now.getDate() - day + (day === 0 ? -6 : 1)
+      const monday = new Date(now)
+      monday.setDate(diff)
+      const sunday = new Date(monday)
+      sunday.setDate(monday.getDate() + 6)
+      return {
+        start_date: getLocalFormattedDate(monday),
+        end_date: getLocalFormattedDate(sunday)
+      }
+    } else if (p === 'bulan_ini') {
+      const y = now.getFullYear()
+      const m = String(now.getMonth() + 1).padStart(2, '0')
+      const lastDay = new Date(y, now.getMonth() + 1, 0).getDate()
+      return {
+        start_date: `${y}-${m}-01`,
+        end_date: `${y}-${m}-${String(lastDay).padStart(2, '0')}`
+      }
+    } else if (p === 'tahun') {
+      const y = now.getFullYear()
+      return {
+        start_date: `${y}-01-01`,
+        end_date: `${y}-12-31`
+      }
+    }
+
+    const y = now.getFullYear()
+    const m = String(now.getMonth() + 1).padStart(2, '0')
+    const lastDay = new Date(y, now.getMonth() + 1, 0).getDate()
     return {
-      start_date: start.toISOString().split('T')[0],
-      end_date: end.toISOString().split('T')[0],
+      start_date: `${y}-${m}-01`,
+      end_date: `${y}-${m}-${String(lastDay).padStart(2, '0')}`
     }
   }
 
@@ -78,12 +125,16 @@ export default function AdminLaporan() {
       if (selectedOutlet) range.outlet_id = selectedOutlet
       if (type === 'pdf') {
         const res = await laporanService.exportPdf(range)
-        const url = URL.createObjectURL(new Blob([res.data]))
+        const url = URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }))
         const a = document.createElement('a'); a.href = url
         a.download = `laporan-${range.start_date}-ke-${range.end_date}.pdf`; a.click()
         URL.revokeObjectURL(url)
       } else {
-        alert('Export Excel belum tersedia di backend')
+        const res = await laporanService.exportExcel(range)
+        const url = URL.createObjectURL(new Blob([res.data], { type: 'text/csv' }))
+        const a = document.createElement('a'); a.href = url
+        a.download = `laporan-${range.start_date}-ke-${range.end_date}.csv`; a.click()
+        URL.revokeObjectURL(url)
       }
     } catch (err) {
       console.error('Export error:', err)
@@ -131,11 +182,16 @@ export default function AdminLaporan() {
             <div className="flex items-center justify-between">
               <h3 className="font-bold text-zinc-800">Filter Keuangan</h3>
               <div className="flex items-center gap-2 flex-wrap">
-                {['harian', 'bulanan', 'tahunan'].map(p => (
-                  <button key={p} onClick={() => setPeriod(p)}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold capitalize transition-all border
-                  ${period === p ? 'bg-yellow-400 text-zinc-900 border-yellow-400' : 'bg-white text-zinc-600 border-zinc-200 hover:border-yellow-300'}`}>
-                    {p}
+                {[
+                  { value: 'hari_ini', label: 'Hari Ini' },
+                  { value: 'minggu_ini', label: 'Minggu Ini' },
+                  { value: 'bulan_ini', label: 'Bulan Ini' },
+                  { value: 'tahun', label: 'Tahun' },
+                ].map(p => (
+                  <button key={p.value} onClick={() => setPeriod(p.value)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all border
+                  ${period === p.value ? 'bg-yellow-400 text-zinc-900 border-yellow-400' : 'bg-white text-zinc-600 border-zinc-200 hover:border-yellow-300'}`}>
+                    {p.label}
                   </button>
                 ))}
                 <button onClick={() => handleExport('pdf')} disabled={exportLoading}
@@ -159,7 +215,7 @@ export default function AdminLaporan() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               <div className="bg-white rounded-2xl p-5 border border-zinc-200">
                 <h3 className="font-bold text-zinc-900 text-sm mb-1">Tren Omzet</h3>
-                <p className="text-zinc-400 text-xs mb-5">Periode: {period}</p>
+                <p className="text-zinc-400 text-xs mb-5">Periode: {formatPeriodLabel(period)}</p>
                 {loading ? <div className="h-52 bg-zinc-100 rounded-xl animate-pulse" /> :
                   data.revenue.length === 0 ? (
                     <div className="h-52 flex items-center justify-center text-zinc-400 text-sm">
@@ -187,7 +243,7 @@ export default function AdminLaporan() {
 
               <div className="bg-white rounded-2xl p-5 border border-zinc-200">
                 <h3 className="font-bold text-zinc-900 text-sm mb-1">Omzet per Outlet</h3>
-                <p className="text-zinc-400 text-xs mb-5">Periode: {period}</p>
+                <p className="text-zinc-400 text-xs mb-5">Periode: {formatPeriodLabel(period)}</p>
                 {loading ? <div className="h-52 bg-zinc-100 rounded-xl animate-pulse" /> :
                   data.byOutlet.length === 0 ? (
                     <div className="h-52 flex items-center justify-center text-zinc-400 text-sm">
@@ -212,7 +268,7 @@ export default function AdminLaporan() {
             <div className="bg-white rounded-2xl p-5 border border-zinc-200 mt-4">
               <h3 className="font-bold text-zinc-900 text-sm mb-1">Aktivitas & Log Koreksi per Jam</h3>
               <p className="text-zinc-400 text-xs mb-5">
-                Pantau jam sibuk dan anomali koreksi. Periode: {period}
+                Pantau jam sibuk dan anomali koreksi. Periode: {formatPeriodLabel(period)}
               </p>
               {loading ? <div className="h-52 bg-zinc-100 rounded-xl animate-pulse" /> :
                 data.aktivitasPerJam.length === 0 ? (
@@ -280,14 +336,22 @@ export default function AdminLaporan() {
 function TabRekapKasir({ selectedOutlet }) {
   const [rekaps, setRekaps] = useState([])
   const [loading, setLoading] = useState(true)
+  const [filterDateRange, setFilterDateRange] = useState({ start_date: '', end_date: '', date: '' })
   const navigate = useNavigate()
 
-  useEffect(() => { fetchRekap() }, [])
+  useEffect(() => { fetchRekap() }, [filterDateRange])
 
   const fetchRekap = async () => {
     setLoading(true)
     try {
-      const res = await rekapService.getHarian()
+      const params = {}
+      if (filterDateRange.start_date && filterDateRange.end_date) {
+        params.start_date = filterDateRange.start_date
+        params.end_date = filterDateRange.end_date
+      } else if (filterDateRange.date) {
+        params.date = filterDateRange.date
+      }
+      const res = await rekapService.getHarian(params)
       setRekaps(res.data.data?.data || res.data.data || [])
     } catch (err) {
       console.error('Fetch rekap error:', err)
@@ -310,12 +374,15 @@ function TabRekapKasir({ selectedOutlet }) {
 
   return (
     <div className="bg-white rounded-3xl border border-zinc-200 overflow-hidden shadow-sm">
-      <div className="px-6 py-5 border-b border-zinc-100 flex items-center justify-between bg-zinc-50/50">
+      <div className="px-6 py-5 border-b border-zinc-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-zinc-50/50">
         <h3 className="font-bold text-zinc-900 text-lg">Daftar Rekap Kasir</h3>
-        <button onClick={fetchRekap} className="text-zinc-500 hover:text-zinc-900 transition-colors text-sm font-medium flex items-center gap-1.5">
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
-          Refresh
-        </button>
+        <div className="flex flex-wrap items-center gap-3">
+          <DateFilter onChange={setFilterDateRange} />
+          <button onClick={fetchRekap} className="text-zinc-500 hover:text-zinc-900 transition-colors text-sm font-bold flex items-center gap-1.5 bg-white border border-zinc-200 px-3 py-2.5 rounded-xl">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+            Refresh
+          </button>
+        </div>
       </div>
       <div className="overflow-x-auto">
         <table className="w-full text-left border-collapse">

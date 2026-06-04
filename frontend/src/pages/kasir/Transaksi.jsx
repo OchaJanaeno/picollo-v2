@@ -3,6 +3,7 @@ import Layout from '../../components/Layout'
 import useAuthStore from '../../store/authStore'
 import { productService } from '../../services/produkService'
 import { transaksiService } from '../../services/transaksiService'
+import { authService } from '../../services/authService'
 
 // ── Struk / Receipt ──
 function ModalStruk({ transaksi, onClose, onBaru }) {
@@ -154,6 +155,9 @@ function ModalPembayaran({ keranjang, total, user, kasirNama, onClose, onSuccess
         return
       }
 
+      // Deteksi jika ada item dalam keranjang yang dipaksa (qty melebihi stok asli produk)
+      const isForced = keranjang.some(item => item.qty > item.stok)
+
       const payload = {
         outlet_id: outletId,
         metode_pembayaran: metode.toLowerCase(),
@@ -161,12 +165,12 @@ function ModalPembayaran({ keranjang, total, user, kasirNama, onClose, onSuccess
           product_id: item.id,
           qty: item.qty
         })),
-        catatan: ''
+        catatan: '',
+        force: isForced // kirim force boolean ke backend
       }
 
       const res = await transaksiService.create(payload)
       const txData = res.data.data
-      const snapToken = res.data.snap_token
 
       const buildStrukData = () => ({
         id: txData.transaction_code,
@@ -182,34 +186,16 @@ function ModalPembayaran({ keranjang, total, user, kasirNama, onClose, onSuccess
         kembalian: kembalian || 0,
       })
 
-      if (snapToken) {
-        window.snap.pay(snapToken, {
-          onSuccess: function(result) {
-            setStruk(buildStrukData())
-            setLoading(false)
-          },
-          onPending: function(result) {
-            alert('Menunggu pembayaran Anda...')
-            onClose()
-            setLoading(false)
-          },
-          onError: function(result) {
-            alert('Pembayaran gagal')
-            setLoading(false)
-          },
-          onClose: function() {
-            alert('Anda menutup popup sebelum menyelesaikan pembayaran')
-            setLoading(false)
-          }
-        })
-        return
-      }
-
-      // Buat data struk untuk tunai
+      // Buat data struk
       setStruk(buildStrukData())
     } catch (err) {
-      alert(err.response?.data?.message || 'Gagal memproses pembayaran')
-    } finally { setLoading(false) }
+      const errorMsg = err.response?.data?.errors
+        ? Object.values(err.response.data.errors).flat().join('\n')
+        : err.response?.data?.message || 'Gagal memproses pembayaran';
+      alert(errorMsg)
+    } finally { 
+      setLoading(false)
+    }
   }
 
   // Kalau struk sudah ada → tampilkan struk
@@ -302,26 +288,19 @@ function ModalPembayaran({ keranjang, total, user, kasirNama, onClose, onSuccess
             </div>
           </div>
 
-          {/* QRIS → tampilkan QR + nominal */}
+          {/* QRIS → tampilkan petunjuk manual */}
           {metode === 'QRIS' && (
             <div className="bg-zinc-50 border border-zinc-200 rounded-2xl p-5 text-center">
-              <div className="w-36 h-36 bg-white border-2 border-zinc-200 rounded-xl mx-auto mb-3
-                              flex items-center justify-center">
-                {/* TODO: tampilkan QR real dari backend */}
-                <svg className="w-20 h-20 text-zinc-300" fill="none" stroke="currentColor"
-                  viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
-                    d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
+              <div className="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                <svg className="w-8 h-8 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
                 </svg>
               </div>
               <p className="text-zinc-900 font-bold text-lg mb-1">
                 Rp {total.toLocaleString('id-ID')}
               </p>
-              <p className="text-zinc-400 text-xs">
-                Scan QR dengan aplikasi pembayaran apapun
-              </p>
-              <p className="text-zinc-400 text-xs mt-0.5">
-                (QR Code aktif setelah backend terhubung)
+              <p className="text-zinc-600 text-xs mt-2">
+                Silakan tunjukkan kode QRIS fisik outlet Anda kepada pelanggan. Tekan tombol konfirmasi di bawah jika pembayaran telah berhasil diselesaikan.
               </p>
             </div>
           )}
@@ -424,7 +403,7 @@ function ModalPembayaran({ keranjang, total, user, kasirNama, onClose, onSuccess
 
 // ── Halaman Utama Kasir Transaksi ──
 export default function KasirTransaksi() {
-  const { user, outlets } = useAuthStore()
+  const { user, outlets, setOutlets } = useAuthStore()
   const [produkList, setProdukList] = useState([])
   const [keranjang, setKeranjang] = useState([])
   const [search, setSearch] = useState('')
@@ -432,7 +411,21 @@ export default function KasirTransaksi() {
   const [showBayar, setShowBayar] = useState(false)
   const [toast, setToast] = useState(null)
 
-  useEffect(() => { fetchProduk() }, [])
+  useEffect(() => {
+    const refreshProfile = async () => {
+      try {
+        const res = await authService.me()
+        const fullUser = res.data.data
+        if (fullUser?.outlets) {
+          setOutlets(fullUser.outlets)
+        }
+      } catch (err) {
+        console.error("Gagal memuat ulang data outlet:", err)
+      }
+    }
+    refreshProfile()
+    fetchProduk()
+  }, [])
 
   const fetchProduk = async () => {
     try {
@@ -518,7 +511,7 @@ export default function KasirTransaksi() {
           keranjang={keranjang}
           total={total}
           user={user}
-          kasirNama={user?.nama || user?.email || 'Kasir'}
+          kasirNama={user?.name || user?.email || 'Kasir'}
           onClose={() => setShowBayar(false)}
           onSuccess={() => { setKeranjang([]); setShowBayar(false) }}
         />

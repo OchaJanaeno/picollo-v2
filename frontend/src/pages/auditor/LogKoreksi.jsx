@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import Layout from '../../components/Layout'
 import { logKoreksiService } from '../../services/logKoreksiService'
 import useAuthStore from '../../store/authStore'
+import DateFilter from '../../components/DateFilter'
 
 export default function AuditorLogKoreksi() {
   const { activeOutletId } = useAuthStore()
@@ -9,13 +10,21 @@ export default function AuditorLogKoreksi() {
   const [loading, setLoading] = useState(true)
   const [search, setSearch]   = useState('')
   const [filterTipe, setFilterTipe] = useState('semua')
+  const [filterDateRange, setFilterDateRange] = useState({ start_date: '', end_date: '', date: '' })
 
-  useEffect(() => { fetchData() }, [activeOutletId])
+  useEffect(() => { fetchData() }, [filterDateRange, activeOutletId])
 
   const fetchData = async () => {
     setLoading(true)
     try {
-      const res = await logKoreksiService.getAll({ all: true, outlet_id: activeOutletId })
+      const params = { all: true, outlet_id: activeOutletId }
+      if (filterDateRange.start_date && filterDateRange.end_date) {
+        params.start_date = filterDateRange.start_date
+        params.end_date = filterDateRange.end_date
+      } else if (filterDateRange.date) {
+        params.date = filterDateRange.date
+      }
+      const res = await logKoreksiService.getAll(params)
       const raw = res.data.data?.data || res.data.data || []
       const mapped = raw.map(l => ({
         id: l.id,
@@ -99,16 +108,19 @@ export default function AuditorLogKoreksi() {
 
         {/* Filter & Search */}
         <div className="bg-white rounded-2xl border border-zinc-200 p-4 space-y-3">
-          <div className="relative">
-            <svg className="w-4 h-4 text-zinc-400 absolute left-3.5 top-1/2 -translate-y-1/2"
-              fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0"/>
-            </svg>
-            <input type="text" value={search} onChange={e => setSearch(e.target.value)}
-              placeholder="Cari kasir atau ID transaksi..."
-              className="w-full border border-zinc-300 rounded-xl pl-10 pr-4 py-2.5 text-sm
-                         focus:outline-none focus:border-yellow-400 transition-colors"/>
+          <div className="flex flex-col md:flex-row gap-3">
+            <div className="relative flex-1">
+              <svg className="w-4 h-4 text-zinc-400 absolute left-3.5 top-1/2 -translate-y-1/2"
+                fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0"/>
+              </svg>
+              <input type="text" value={search} onChange={e => setSearch(e.target.value)}
+                placeholder="Cari kasir atau ID transaksi..."
+                className="w-full border border-zinc-300 rounded-xl pl-10 pr-4 py-2.5 text-sm
+                           focus:outline-none focus:border-yellow-400 transition-colors"/>
+            </div>
+            <DateFilter onChange={setFilterDateRange} />
           </div>
           <div className="flex gap-2">
             {['semua', 'edit', 'hapus', 'tambah'].map(t => (

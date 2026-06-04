@@ -16,10 +16,21 @@ class HashVerificationController extends Controller
     {
         $outletIds = $request->user()->outlets()->pluck('outlets.id');
 
-        $verifications = HashVerification::whereHas('transaction', fn($q) =>
+        $query = HashVerification::whereHas('transaction', fn($q) =>
             $q->whereIn('outlet_id', $outletIds)
-        )
-        ->with([
+        );
+
+        // Filter tanggal
+        if ($request->filled('start_date') && $request->filled('end_date')) {
+            $query->whereBetween('created_at', [
+                $request->start_date . ' 00:00:00',
+                $request->end_date . ' 23:59:59'
+            ]);
+        } elseif ($request->filled('date')) {
+            $query->whereDate('created_at', $request->date);
+        }
+
+        $verifications = $query->with([
             'transaction:id,transaction_code,outlet_id,total_amount,created_at',
             'verifiedBy:id,name',
         ])

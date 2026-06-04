@@ -20,6 +20,16 @@ class DailyRecapController extends Controller
             ->with(['outlet:id,nama', 'kasir:id,name', 'approvedBy:id,name'])
             ->orderByDesc('tanggal');
 
+        // Filter tanggal
+        if ($request->filled('start_date') && $request->filled('end_date')) {
+            $query->whereBetween('tanggal', [
+                $request->start_date,
+                $request->end_date
+            ]);
+        } elseif ($request->filled('date')) {
+            $query->where('tanggal', $request->date);
+        }
+
         // Kasir hanya lihat rekap milik sendiri
         if ($user->hasRole('kasir')) {
             $query->where('user_id', $user->id);
