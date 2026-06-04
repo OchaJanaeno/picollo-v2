@@ -22,6 +22,11 @@ class OutletController extends Controller
             ->withSum(['transactions as total_omzet' => function ($query) {
                 $query->where('status', 'success');
             }], 'total_amount')
+            ->withCount(['users as total_kasir' => function ($query) {
+                $query->whereHas('roles', function ($q) {
+                    $q->where('name', 'kasir');
+                });
+            }])
             ->orderByDesc('created_at')
             ->get();
 
@@ -37,6 +42,11 @@ class OutletController extends Controller
         $outlet = $request->user()
             ->outlets()
             ->withCount('products')
+            ->withCount(['users as total_kasir' => function ($query) {
+                $query->whereHas('roles', function ($q) {
+                    $q->where('name', 'kasir');
+                });
+            }])
             ->find($id);
 
         if (!$outlet) {

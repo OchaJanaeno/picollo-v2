@@ -14,10 +14,6 @@ use App\Http\Controllers\Api\AuditLogController;
 use App\Http\Controllers\Api\HashVerificationController;
 use App\Http\Controllers\Api\AuditorController;
 
-use App\Http\Controllers\Api\PaymentCallbackController;
-
-// Webhook / Notification route untuk Midtrans (Public)
-Route::post('/payment/midtrans/notification', [PaymentCallbackController::class, 'midtransNotification']);
 
 // Public routes — dengan throttle untuk keamanan
 Route::prefix('auth')->middleware('throttle:10,1')->group(function () {
@@ -39,6 +35,7 @@ Route::middleware('auth:api')->group(function () {
     Route::middleware('role:admin')->group(function () {
         Route::post('/auth/profile',                        [AuthController::class, 'updateProfile']);
         Route::get('/dashboard/admin',                      [DashboardController::class, 'adminDashboard']);
+        Route::get('/notifications',                        [DashboardController::class, 'notifications']);
         Route::apiResource('/outlets',                      OutletController::class);
         
         // Atur menu & stok outlet
@@ -74,6 +71,7 @@ Route::middleware('auth:api')->group(function () {
     // Admin & Auditor (Access to audits, reports, cashier list, and correction logs list)
     Route::middleware('role:admin|auditor')->group(function () {
         Route::get('/reports/export-pdf',                   [ReportController::class, 'exportPdf']);
+        Route::get('/reports/export-excel',                 [ReportController::class, 'exportExcel']);
         Route::get('/hash-verifications',                   [HashVerificationController::class, 'index']);
         Route::get('/hash-verifications/{id}',              [HashVerificationController::class, 'show']);
         Route::post('/hash-verifications/verify',           [HashVerificationController::class, 'verify']);

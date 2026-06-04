@@ -50,7 +50,7 @@ export default function AuditorDashboard() {
       setRecentVerifikasi(recent)
 
       setKeuangan({
-        omzet: Number(ringkasan.total_omzet) || 0,
+        omzet: Number(ringkasan.total_omzet || ringkasan.total_pendapatan) || 0,
         tunai: Number(ringkasan.total_tunai) || 0,
         qris: Number(ringkasan.total_qris) || 0,
       })
