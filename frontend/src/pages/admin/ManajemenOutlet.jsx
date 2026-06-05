@@ -4,10 +4,11 @@ import api from '../../services/api'
 import { outletService } from '../../services/outletService'
 
 const formatRupiah = (num) => {
-  if (!num && num !== 0) return 'Rp 0'
-  if (num >= 1000000) return `Rp ${(num / 1000000).toFixed(1)}jt`
-  if (num >= 1000) return `Rp ${(num / 1000).toFixed(0)}rb`
-  return `Rp ${num.toLocaleString('id-ID')}`
+  const val = Number(num)
+  if (isNaN(val) || (!val && val !== 0)) return 'Rp 0'
+  if (val >= 1000000) return `Rp ${(val / 1000000).toFixed(1)}jt`
+  if (val >= 1000) return `Rp ${(val / 1000).toFixed(0)}rb`
+  return `Rp ${val.toLocaleString('id-ID')}`
 }
 
 function StatusBadge({ status }) {

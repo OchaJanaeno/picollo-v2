@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom'
 import Layout from '../../components/Layout'
 import { transaksiService } from '../../services/transaksiService'
 import useAuthStore from '../../store/authStore'
+import DateFilter from '../../components/DateFilter'
 
 const StatusBadge = ({ status }) => {
   const map = {
@@ -17,7 +18,7 @@ export default function AuditorTransaksi() {
   const { activeOutletId } = useAuthStore()
   const [searchParams, setSearchParams] = useSearchParams()
 
-  const [filterDate, setFilterDate] = useState(searchParams.get('date') || '')
+  const [filterDateRange, setFilterDateRange] = useState({ start_date: '', end_date: '', date: '' })
   const [data, setData] = useState([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
@@ -32,17 +33,22 @@ export default function AuditorTransaksi() {
 
   useEffect(() => { 
     const newParams = new URLSearchParams()
-    if (filterDate) newParams.set('date', filterDate)
+    if (filterDateRange.date) newParams.set('date', filterDateRange.date)
     setSearchParams(newParams, { replace: true })
 
     fetchData() 
-  }, [filterDate, activeOutletId])
+  }, [filterDateRange, activeOutletId])
 
   const fetchData = async () => {
     setLoading(true)
     try {
       const params = { all: true, outlet_id: activeOutletId }
-      if (filterDate) params.date = filterDate
+      if (filterDateRange.start_date && filterDateRange.end_date) {
+        params.start_date = filterDateRange.start_date
+        params.end_date = filterDateRange.end_date
+      } else if (filterDateRange.date) {
+        params.date = filterDateRange.date
+      }
 
       const res = await transaksiService.getAll(params)
       const raw = res.data.data?.data || res.data.data || []
@@ -92,14 +98,9 @@ export default function AuditorTransaksi() {
                 placeholder="Cari ID transaksi atau kasir..."
                 className="w-full border border-zinc-300 rounded-xl pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:border-yellow-400 transition-colors" />
             </div>
-            <input 
-              type="date"
-              value={filterDate}
-              onChange={e => setFilterDate(e.target.value)}
-              className="bg-white border border-zinc-300 text-zinc-700 text-sm font-semibold rounded-xl px-4 py-2.5 focus:outline-none focus:border-yellow-400 transition-colors shrink-0"
-            />
-            {filterDate && (
-              <button onClick={() => setFilterDate('')} className="text-zinc-500 hover:text-yellow-600 text-sm font-semibold px-2">
+            <DateFilter onChange={setFilterDateRange} initialDate={searchParams.get('date') || ''} />
+            {(filterDateRange.start_date || filterDateRange.end_date || filterDateRange.date) && (
+              <button onClick={() => setFilterDateRange({ start_date: '', end_date: '', date: '' })} className="text-zinc-500 hover:text-yellow-600 text-sm font-semibold px-2">
                 Reset
               </button>
             )}

@@ -150,7 +150,9 @@ class TransactionController extends Controller
                 }
 
                 $pivot = $product->outlets->first()->pivot;
-                if ($pivot->stok < $item['qty']) {
+                $force = filter_var($request->input('force', false), FILTER_VALIDATE_BOOLEAN);
+                
+                if (!$force && $pivot->stok < $item['qty']) {
                     DB::rollBack();
                     return response()->json([
                         'success' => false,
@@ -158,7 +160,7 @@ class TransactionController extends Controller
                     ], 422);
                 }
 
-                // Kurangi stok di pivot table
+                // Kurangi stok di pivot table (jika force, stok bisa minus)
                 $product->outlets()->updateExistingPivot($request->outlet_id, [
                     'stok' => $pivot->stok - $item['qty']
                 ]);
@@ -220,12 +222,15 @@ class TransactionController extends Controller
 
             $hash = hash('sha256', $signature);
 
-            HashVerification::create([
-                'transaction_id' => $transaction->id,
-                'hash_sha256'    => $hash,
-                'previous_hash'  => $previousHash,
-                'status'         => 'verified',
-            ]);
+                HashVerification::create([
+                    'transaction_id' => $transaction->id,
+                    'hash_sha256'    => $hash,
+                    'previous_hash'  => $previousHash,
+                    'status'         => 'verified',
+                ]);
+
+            $snapToken = null;
+            $qrisUrl = null;
 
             DB::commit();
 
@@ -233,6 +238,7 @@ class TransactionController extends Controller
                 'success' => true,
                 'message' => 'Transaksi berhasil dibuat.',
                 'data'    => $transaction->load(['items', 'hashVerification']),
+                'snap_token' => $snapToken,
             ], 201);
 
         } catch (UniqueConstraintViolationException $e) {

@@ -5,14 +5,14 @@ import {
   Tooltip, ResponsiveContainer, BarChart, Bar
 } from 'recharts'
 import { dashboardService } from '../../services/dashboardService'
-import { transaksiService } from '../../services/transaksiService'
 import { outletService } from '../../services/outletService'
 
 const formatRupiah = (num) => {
-  if (!num && num !== 0) return '-'
-  if (num >= 1000000) return `Rp ${(num / 1000000).toFixed(1)}jt`
-  if (num >= 1000) return `Rp ${(num / 1000).toFixed(0)}rb`
-  return `Rp ${num.toLocaleString('id-ID')}`
+  const val = Number(num)
+  if (isNaN(val) || (!val && val !== 0)) return '-'
+  if (val >= 1000000) return `Rp ${(val / 1000000).toFixed(1)}jt`
+  if (val >= 1000) return `Rp ${(val / 1000).toFixed(0)}rb`
+  return `Rp ${val.toLocaleString('id-ID')}`
 }
 
 function StatusBadge({ status }) {
@@ -58,10 +58,9 @@ const STAT_ICONS = {
 }
 
 export default function AdminDashboard() {
-  const [period, setPeriod] = useState('6bln')
+  const [period, setPeriod] = useState('bulan_ini')
   const [loading, setLoading] = useState(true)
   const [stats, setStats] = useState(null)
-  const [transactions, setTransactions] = useState([])
   const [outlets, setOutlets] = useState([])
   const [chartData, setChartData] = useState([])
 
@@ -70,17 +69,14 @@ export default function AdminDashboard() {
   const fetchDashboard = async () => {
     setLoading(true)
     try {
-      // FIX: route yang benar sesuai routes/api.php
-      const [statsRes, txRes, outletRes] = await Promise.all([
+      const [statsRes, outletRes] = await Promise.all([
         dashboardService.getAdminStats(period),
-        transaksiService.getAll({ per_page: 5 }),
         outletService.getAll(),
       ])
 
       const statData = statsRes.data.data?.stat_cards || statsRes.data.data || null
       setStats(statData)
 
-      setTransactions(txRes.data.data?.data || txRes.data.data || [])
       setOutlets(outletRes.data.data?.data || outletRes.data.data || [])
 
       // Chart dari grafik_pendapatan di response dashboard
@@ -100,11 +96,19 @@ export default function AdminDashboard() {
 
   const statCards = [
     {
-      key: 'Omzet',
-      label: 'Omzet Hari Ini',
-      value: loading ? null : formatRupiah(stats?.pendapatan_hari_ini || 0),
+      key: 'TotalOmzet',
+      label: 'Total Omzet',
+      value: loading ? null : formatRupiah(stats?.total_omzet || 0),
       up: null,
       color: 'bg-yellow-400',
+      icon: STAT_ICONS.omzet,
+    },
+    {
+      key: 'Pendapatan',
+      label: 'Total Pendapatan',
+      value: loading ? null : formatRupiah(stats?.total_pendapatan || 0),
+      up: null,
+      color: 'bg-zinc-800',
       icon: STAT_ICONS.omzet,
     },
     {
@@ -112,7 +116,7 @@ export default function AdminDashboard() {
       label: 'Transaksi Hari Ini',
       value: loading ? null : (stats?.transaksi_hari_ini ?? '-'),
       up: null,
-      color: 'bg-zinc-800',
+      color: 'bg-zinc-700',
       icon: STAT_ICONS.transaksi,
     },
     {
@@ -120,17 +124,8 @@ export default function AdminDashboard() {
       label: 'Outlet Aktif',
       value: loading ? null : (stats?.total_outlet_aktif ?? '-'),
       up: null,
-      color: 'bg-zinc-700',
-      icon: STAT_ICONS.outlet,
-    },
-    {
-      key: 'Pendapatan',
-      label: 'Perkiraan Pendapatan',
-      value: loading ? null : formatRupiah(stats?.estimasi_pendapatan || 0),
-      change: '-',
-      up: null,
       color: 'bg-yellow-500',
-      icon: STAT_ICONS.anomali,
+      icon: STAT_ICONS.outlet,
     },
   ]
 
@@ -145,13 +140,18 @@ export default function AdminDashboard() {
             <p className="text-zinc-500 text-sm mt-0.5">Selamat datang, berikut informasi terbaru mengenai bisnis anda!</p>
           </div>
           <div className="flex items-center gap-2">
-            {['7hr', '30hr', '6bln'].map(p => (
-              <button key={p} onClick={() => setPeriod(p)}
+            {[
+              { value: 'hari_ini', label: 'Hari Ini' },
+              { value: 'minggu_ini', label: 'Minggu Ini' },
+              { value: 'bulan_ini', label: 'Bulan Ini' },
+              { value: 'tahun', label: 'Tahun' },
+            ].map(p => (
+              <button key={p.value} onClick={() => setPeriod(p.value)}
                 className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all
-                  ${period === p
+                  ${period === p.value
                     ? 'bg-yellow-400 text-zinc-900'
                     : 'bg-white text-zinc-600 border border-zinc-200 hover:border-yellow-300'}`}>
-                {p}
+                {p.label}
               </button>
             ))}
           </div>
@@ -187,7 +187,7 @@ export default function AdminDashboard() {
               <div>
                 <h3 className="font-bold text-zinc-900 text-sm sm:text-base">Tren Omzet</h3>
                 <p className="text-zinc-400 text-xs mt-0.5">
-                  {period === '7hr' ? '7 hari' : period === '30hr' ? '30 hari' : '6 bulan'} terakhir
+                  Periode: {period === 'hari_ini' ? 'Hari Ini' : period === 'minggu_ini' ? 'Minggu Ini' : period === 'bulan_ini' ? 'Bulan Ini' : 'Tahun Ini'}
                 </p>
               </div>
             </div>
@@ -220,7 +220,7 @@ export default function AdminDashboard() {
             <ResponsiveContainer width="100%" height={200}>
               <BarChart
                 data={outlets.map(o => ({
-                  nama: o.nama?.split(' ')[0] || '-',
+                  nama: o.nama || '-',
                   omzet: parseFloat(o.total_omzet || 0),
                 }))}
                 margin={{ top: 5, right: 5, bottom: 0, left: -20 }}>
@@ -237,106 +237,51 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        {/* Bottom Row */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-
-          {/* Recent Transactions */}
-          <div className="bg-white rounded-2xl border border-zinc-200 overflow-hidden">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-zinc-100">
-              <h3 className="font-bold text-zinc-900 text-sm">Transaksi Terbaru</h3>
-              <a href="/admin/transaksi" className="text-yellow-600 text-xs font-semibold hover:underline">
-                Lihat semua
-              </a>
-            </div>
-            <div className="divide-y divide-zinc-50">
-              {loading ? (
-                [1, 2, 3].map(i => (
-                  <div key={i} className="flex items-center gap-3 px-5 py-3">
-                    <div className="animate-pulse bg-zinc-100 rounded-lg w-8 h-8 shrink-0" />
-                    <div className="flex-1 space-y-1">
-                      <div className="animate-pulse bg-zinc-100 rounded h-3 w-32" />
-                      <div className="animate-pulse bg-zinc-100 rounded h-2 w-20" />
-                    </div>
-                  </div>
-                ))
-              ) : transactions.length === 0 ? (
-                <p className="text-center text-zinc-400 text-xs py-8">Belum ada transaksi hari ini</p>
-              ) : (
-                transactions.map((tx) => (
-                  <div key={tx.id} className="flex items-center justify-between px-5 py-3 hover:bg-zinc-50 transition-colors">
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-8 h-8 bg-zinc-100 rounded-lg flex items-center justify-center shrink-0">
-                        <span className="text-zinc-500 text-xs font-mono font-bold">
-                          {tx.metode_pembayaran === 'qris' ? 'QR' : tx.metode_pembayaran === 'transfer' ? 'TF' : 'TN'}
-                        </span>
-                      </div>
-                      <div className="min-w-0">
-                        <p className="text-zinc-900 text-xs font-semibold truncate">
-                          {tx.transaction_code} · {tx.kasir?.name || '-'}
-                        </p>
-                        <p className="text-zinc-400 text-xs">
-                          {tx.outlet?.nama || '-'} · {new Date(tx.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      <span className="text-zinc-900 text-xs font-semibold hidden sm:block">
-                        {formatRupiah(tx.total_amount)}
-                      </span>
-                      <StatusBadge status={tx.status} />
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
+        {/* Bottom Row — Outlet Status */}
+        <div className="bg-white rounded-2xl border border-zinc-200 overflow-hidden">
+          <div className="flex items-center justify-between px-5 py-4 border-b border-zinc-100">
+            <h3 className="font-bold text-zinc-900 text-sm">Status Outlet</h3>
+            <a href="/admin/outlet" className="text-yellow-600 text-xs font-semibold hover:underline">
+              Kelola →
+            </a>
           </div>
-
-          {/* Outlet Status */}
-          <div className="bg-white rounded-2xl border border-zinc-200 overflow-hidden">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-zinc-100">
-              <h3 className="font-bold text-zinc-900 text-sm">Status Outlet</h3>
-              <a href="/admin/outlet" className="text-yellow-600 text-xs font-semibold hover:underline">
-                Kelola →
-              </a>
-            </div>
-            <div className="divide-y divide-zinc-50">
-              {loading ? (
-                [1, 2, 3].map(i => (
-                  <div key={i} className="flex items-center gap-3 px-5 py-3.5">
-                    <div className="animate-pulse bg-zinc-100 rounded-lg w-8 h-8 shrink-0" />
-                    <div className="flex-1 space-y-1">
-                      <div className="animate-pulse bg-zinc-100 rounded h-3 w-28" />
-                      <div className="animate-pulse bg-zinc-100 rounded h-2 w-20" />
+          <div className="divide-y divide-zinc-50">
+            {loading ? (
+              [1, 2, 3].map(i => (
+                <div key={i} className="flex items-center gap-3 px-5 py-3.5">
+                  <div className="animate-pulse bg-zinc-100 rounded-lg w-8 h-8 shrink-0" />
+                  <div className="flex-1 space-y-1">
+                    <div className="animate-pulse bg-zinc-100 rounded h-3 w-28" />
+                    <div className="animate-pulse bg-zinc-100 rounded h-2 w-20" />
+                  </div>
+                </div>
+              ))
+            ) : outlets.length === 0 ? (
+              <p className="text-center text-zinc-400 text-xs py-8">Belum ada outlet</p>
+            ) : (
+              outlets.map((o) => (
+                <div key={o.id} className="flex items-center justify-between px-5 py-3.5 hover:bg-zinc-50 transition-colors">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-8 h-8 bg-yellow-400/20 rounded-lg flex items-center justify-center shrink-0">
+                      <svg className="w-4 h-4 text-yellow-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                          d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                      </svg>
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-zinc-900 text-xs font-semibold truncate">{o.nama}</p>
+                      <p className="text-zinc-400 text-xs">{o.kode_outlet} · {o.total_transaksi || 0} transaksi</p>
                     </div>
                   </div>
-                ))
-              ) : outlets.length === 0 ? (
-                <p className="text-center text-zinc-400 text-xs py-8">Belum ada outlet</p>
-              ) : (
-                outlets.map((o) => (
-                  <div key={o.id} className="flex items-center justify-between px-5 py-3.5 hover:bg-zinc-50 transition-colors">
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-8 h-8 bg-yellow-400/20 rounded-lg flex items-center justify-center shrink-0">
-                        <svg className="w-4 h-4 text-yellow-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                            d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                        </svg>
-                      </div>
-                      <div className="min-w-0">
-                        <p className="text-zinc-900 text-xs font-semibold truncate">{o.nama}</p>
-                        <p className="text-zinc-400 text-xs">{o.kode_outlet} · {o.total_transaksi || 0} transaksi</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      <span className="text-zinc-700 text-xs font-semibold hidden sm:block">
-                        {formatRupiah(o.total_omzet || 0)}
-                      </span>
-                      <StatusBadge status={o.status} />
-                    </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className="text-zinc-700 text-xs font-semibold hidden sm:block">
+                      {formatRupiah(o.total_omzet || 0)}
+                    </span>
+                    <StatusBadge status={o.status} />
                   </div>
-                ))
-              )}
-            </div>
+                </div>
+              ))
+            )}
           </div>
         </div>
 

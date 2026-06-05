@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { NavLink, useNavigate, Link } from 'react-router-dom'
 import useAuthStore from '../store/authStore'
 import PicolloLogo from './PicolloLogo'
+import api from '../services/api'
 
 const navConfig = {
   admin: {
@@ -232,11 +233,43 @@ export default function Layout({ children }) {
   const [notifOpen, setNotifOpen]     = useState(false)
   const [profileOpen, setProfileOpen] = useState(false)
 
-  const { user, logout, outlets }  = useAuthStore()
+  const { user, logout, outlets, activeOutletId }  = useAuthStore()
   const role               = user?.role
   const displayName        = getUserName(user)
   const navigate           = useNavigate()
   const nav                = navConfig[role] || navConfig.admin
+
+  const getActiveOutletName = () => {
+    if (role === 'admin') return ''
+    if (role === 'auditor') {
+      if (!activeOutletId) return ' (Semua Outlet)'
+      const activeOutlet = outlets.find(o => String(o.id) === String(activeOutletId))
+      return activeOutlet ? ` (${activeOutlet.nama})` : ''
+    }
+    return outlets?.[0]?.nama ? ` (${outlets[0].nama})` : ''
+  }
+
+  const [notifications, setNotifications] = useState([])
+  const [notifLoading, setNotifLoading] = useState(false)
+
+  const fetchNotifications = async () => {
+    if (role !== 'admin') return
+    setNotifLoading(true)
+    try {
+      const res = await api.get('/notifications')
+      setNotifications(res.data.data || [])
+    } catch (err) {
+      console.error('Failed to fetch notifications:', err)
+    } finally {
+      setNotifLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchNotifications()
+    const interval = setInterval(fetchNotifications, 30000)
+    return () => clearInterval(interval)
+  }, [role])
 
   const notifRef   = useRef(null)
   const profileRef = useRef(null)
@@ -298,7 +331,7 @@ export default function Layout({ children }) {
               Picollo{' '}
               <span className="text-zinc-400 font-normal hidden sm:inline">
                 — {nav.label}
-                {role !== 'admin' && outlets?.[0]?.nama ? ` (${outlets[0].nama})` : ''}
+                {getActiveOutletName()}
               </span>
             </h1>
           </div>
@@ -330,20 +363,57 @@ export default function Layout({ children }) {
                 {role === 'admin' && (
                   <div className="relative" ref={notifRef}>
                     <button onClick={() => { setNotifOpen(!notifOpen); setProfileOpen(false) }}
-                      className="p-2 text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100 rounded-xl transition-colors">
+                      className="p-2 text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100 rounded-xl transition-colors relative">
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                           d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
                       </svg>
+                      {notifications.length > 0 && (
+                        <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full ring-2 ring-white" />
+                      )}
                     </button>
                     {notifOpen && (
                       <div className="absolute right-0 top-full mt-2 w-80 bg-white rounded-2xl
                                       shadow-xl border border-zinc-200 z-50 overflow-hidden">
-                        <div className="px-4 py-3 border-b border-zinc-100">
-                          <h3 className="font-bold text-zinc-900 text-sm">Notifikasi</h3>
+                        <div className="px-4 py-3 border-b border-zinc-100 flex items-center justify-between bg-zinc-50/50">
+                          <h3 className="font-bold text-zinc-900 text-sm">Notifikasi Peringatan</h3>
+                          {notifications.length > 0 && (
+                            <span className="text-[10px] bg-red-100 text-red-700 font-bold px-2 py-0.5 rounded-full">
+                              {notifications.length} Warning
+                            </span>
+                          )}
                         </div>
-                        <div className="px-4 py-8 text-center">
-                          <p className="text-zinc-500 text-sm">Tidak ada notifikasi</p>
+                        <div className="max-h-96 overflow-y-auto divide-y divide-zinc-50">
+                          {notifLoading ? (
+                            <div className="px-4 py-8 text-center text-zinc-400 text-xs animate-pulse">
+                              Memuat...
+                            </div>
+                          ) : notifications.length === 0 ? (
+                            <div className="px-4 py-8 text-center">
+                              <p className="text-zinc-500 text-sm">Tidak ada notifikasi baru</p>
+                              <p className="text-zinc-400 text-xs mt-1">Semua sistem blockchain aman</p>
+                            </div>
+                          ) : (
+                            notifications.map((notif) => (
+                              <div key={notif.id} className="p-4 hover:bg-zinc-50 transition-colors text-left">
+                                <div className="flex items-start gap-2.5">
+                                  <div className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${notif.type === 'danger' ? 'bg-red-500' : 'bg-amber-500'}`} />
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-xs font-bold text-zinc-900 leading-tight">
+                                      {notif.title}
+                                    </p>
+                                    <p className="text-[11px] text-zinc-600 mt-1 leading-normal">
+                                      {notif.message}
+                                    </p>
+                                    <div className="flex items-center justify-between mt-2 text-[10px] text-zinc-400 font-medium">
+                                      <span>{notif.outlet}</span>
+                                      <span>{new Date(notif.created_at).toLocaleString('id-ID', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: 'short' })}</span>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            ))
+                          )}
                         </div>
                       </div>
                     )}
