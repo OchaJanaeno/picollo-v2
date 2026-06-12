@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import Layout from '../../components/Layout'
 import useAuthStore from '../../store/authStore'
 import { productService } from '../../services/produkService'
@@ -6,7 +6,7 @@ import { transaksiService } from '../../services/transaksiService'
 import { authService } from '../../services/authService'
 
 // ── Struk / Receipt ──
-function ModalStruk({ transaksi, onClose, onBaru }) {
+function ModalStruk({ transaksi, onBaru }) {
   const handlePrint = () => window.print()
 
   return (
@@ -87,7 +87,13 @@ function ModalStruk({ transaksi, onClose, onBaru }) {
           </div>
 
           {/* Footer struk */}
-          <div className="border-t border-dashed border-zinc-300 mt-3 pt-3 text-center">
+          <div className="border-t border-dashed border-zinc-300 mt-3 pt-3 text-center space-y-1">
+            {transaksi.hash && (
+              <div className="bg-zinc-50 border border-zinc-200 rounded-lg p-2 mb-2 font-mono text-[10px] text-zinc-500 break-all select-all">
+                <p className="font-semibold text-zinc-600 mb-0.5">HASH BLOCKCHAIN</p>
+                {transaksi.hash}
+              </div>
+            )}
             <p className="text-zinc-400 text-xs">Terima kasih telah berbelanja</p>
             <p className="text-zinc-400 text-xs">Transaksi tercatat di blockchain</p>
           </div>
@@ -184,6 +190,7 @@ function ModalPembayaran({ keranjang, total, user, kasirNama, onClose, onSuccess
         metode,
         uangDiterima: uangNum || total,
         kembalian: kembalian || 0,
+        hash: txData.hash_verification?.hash_sha256 || null,
       })
 
       // Buat data struk
@@ -403,13 +410,28 @@ function ModalPembayaran({ keranjang, total, user, kasirNama, onClose, onSuccess
 
 // ── Halaman Utama Kasir Transaksi ──
 export default function KasirTransaksi() {
-  const { user, outlets, setOutlets } = useAuthStore()
+  const { user, setOutlets } = useAuthStore()
   const [produkList, setProdukList] = useState([])
   const [keranjang, setKeranjang] = useState([])
   const [search, setSearch] = useState('')
   const [kategori, setKategori] = useState('Semua')
   const [showBayar, setShowBayar] = useState(false)
   const [toast, setToast] = useState(null)
+
+  async function fetchProduk() {
+    try {
+      const res = await productService.getAll()
+      const mapped = (res.data.data || []).map(p => ({
+        id: p.id,
+        nama: p.nama,
+        kategori: p.kategori || 'Lainnya',
+        harga: p.harga,
+        foto: p.gambar_url || null,
+        stok: p.outlets?.[0]?.pivot?.stok || 0,
+      }))
+      setProdukList(mapped)
+    } catch { setProdukList([]) }
+  }
 
   useEffect(() => {
     const refreshProfile = async () => {
@@ -426,21 +448,6 @@ export default function KasirTransaksi() {
     refreshProfile()
     fetchProduk()
   }, [])
-
-  const fetchProduk = async () => {
-    try {
-      const res = await productService.getAll()
-      const mapped = (res.data.data || []).map(p => ({
-        id: p.id,
-        nama: p.nama,
-        kategori: p.kategori || 'Lainnya',
-        harga: p.harga,
-        foto: p.gambar_url || null,
-        stok: p.outlets?.[0]?.pivot?.stok || 0,
-      }))
-      setProdukList(mapped)
-    } catch { setProdukList([]) }
-  }
 
   const showToast = (msg) => {
     setToast(msg)

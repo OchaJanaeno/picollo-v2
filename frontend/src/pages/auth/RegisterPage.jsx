@@ -22,6 +22,11 @@ const RegisterPage = () => {
         setErrors({ ...errors, [e.target.name]: '' });
     };
 
+    const getError = (field) => {
+        if (!errors[field]) return null;
+        return Array.isArray(errors[field]) ? errors[field][0] : errors[field];
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (form.password !== form.password_confirmation) {
@@ -33,7 +38,7 @@ const RegisterPage = () => {
         setErrors({});
         try {
             await api.post('/auth/register', form);
-            navigate('/login', { state: { registered: true } });
+            navigate('/verify-email', { state: { email: form.email } });
         } catch (err) {
             if (err.response?.data?.errors) {
                 setErrors(err.response.data.errors);
@@ -244,23 +249,23 @@ const RegisterPage = () => {
                                 <label className="field-label">Nama Lengkap</label>
                                 <input
                                     type="text" name="name"
-                                    className={`field-input ${errors.name ? 'err' : ''}`}
+                                    className={`field-input ${getError('name') ? 'err' : ''}`}
                                     value={form.name} onChange={handleChange}
                                     autoComplete="name" required
                                 />
-                                {errors.name && <div className="field-error">{errors.name}</div>}
+                                {getError('name') && <div className="field-error">{getError('name')}</div>}
                             </div>
 
                             <div className="field">
                                 <label className="field-label">Email</label>
                                 <input
                                     type="email" name="email"
-                                    className={`field-input ${errors.email ? 'err' : ''}`}
+                                    className={`field-input ${getError('email') ? 'err' : ''}`}
                                     value={form.email} onChange={handleChange}
                                     placeholder='Email'
                                     autoComplete="email" required
                                 />
-                                {errors.email && <div className="field-error">{errors.email}</div>}
+                                {getError('email') && <div className="field-error">{getError('email')}</div>}
                             </div>
 
                             <div className="field">
@@ -269,7 +274,7 @@ const RegisterPage = () => {
                                     <input
                                         type={show.password ? 'text' : 'password'}
                                         name="password"
-                                        className={`field-input ${errors.password ? 'err' : ''}`}
+                                        className={`field-input ${getError('password') ? 'err' : ''}`}
                                         value={form.password} onChange={handleChange}
                                         placeholder='Password'
                                         autoComplete="new-password" required
@@ -279,8 +284,8 @@ const RegisterPage = () => {
                                         <EyeIcon show={show.password} />
                                     </button>
                                 </div>
-                                <div className="field-hint">Min. 8 karakter</div>
-                                {errors.password && <div className="field-error">{errors.password}</div>}
+                                <div className="field-hint">Min. 8 karakter (huruf besar, kecil, angka, simbol)</div>
+                                {getError('password') && <div className="field-error">{getError('password')}</div>}
                             </div>
 
                             <div className="field">
@@ -289,7 +294,7 @@ const RegisterPage = () => {
                                     <input
                                         type={show.confirm ? 'text' : 'password'}
                                         name="password_confirmation"
-                                        className={`field-input ${errors.password_confirmation ? 'err' : ''}`}
+                                        className={`field-input ${getError('password_confirmation') ? 'err' : ''}`}
                                         value={form.password_confirmation} onChange={handleChange}
                                         placeholder='Konfirmasi Password'
                                         autoComplete="new-password" required
@@ -299,18 +304,18 @@ const RegisterPage = () => {
                                         <EyeIcon show={show.confirm} />
                                     </button>
                                 </div>
-                                {errors.password_confirmation && <div className="field-error">{errors.password_confirmation}</div>}
+                                {getError('password_confirmation') && <div className="field-error">{getError('password_confirmation')}</div>}
                             </div>
 
                             <div className="field">
                                 <label className="field-label">Nama Outlet Pertamamu!</label>
                                 <input
                                     type="text" name="nama_bisnis"
-                                    className={`field-input ${errors.nama_bisnis ? 'err' : ''}`}
+                                    className={`field-input ${getError('nama_bisnis') ? 'err' : ''}`}
                                     value={form.nama_bisnis} onChange={handleChange}
                                     placeholder="Contoh: Warung Ayam Goreng" required
                                 />
-                                {errors.nama_bisnis && <div className="field-error">{errors.nama_bisnis}</div>}
+                                {getError('nama_bisnis') && <div className="field-error">{getError('nama_bisnis')}</div>}
                             </div>
 
                             <button type="submit" className="btn-daftar" disabled={loading}>

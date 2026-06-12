@@ -61,15 +61,19 @@ function ModalBuatAuditor({ outlets, onClose, onSave }) {
     if (Object.keys(e).length) { setErrors(e); return }
     setLoading(true)
     try {
-      const payload = {
-        name: form.nama,
-        email: form.email,
-        password: form.password,
-        password_confirmation: form.password,
-        outlet_ids: form.outlet_ids.map(id => parseInt(id)),
-        instansi: form.instansi,
+      const fd = new FormData()
+      fd.append('name', form.nama)
+      fd.append('email', form.email)
+      fd.append('password', form.password)
+      fd.append('password_confirmation', form.password)
+      fd.append('instansi', form.instansi)
+      form.outlet_ids.forEach(id => {
+        fd.append('outlet_ids[]', id)
+      })
+      if (foto) {
+        fd.append('avatar', foto)
       }
-      const res = await auditorService.create(payload)
+      const res = await auditorService.create(fd)
       const newAuditorObj = {
         id: res.data.data.id,
         nama: res.data.data.name,
@@ -79,6 +83,7 @@ function ModalBuatAuditor({ outlets, onClose, onSave }) {
         bergabung: new Date().toLocaleDateString('id-ID'),
         status: 'aktif',
         password: form.password,
+        foto: res.data.data.avatar_url || null,
       }
       onSave(newAuditorObj)
     } catch (err) {
@@ -301,7 +306,6 @@ function ModalKredensial({ auditor, onClose }) {
               { label: 'Email',     value: auditor.email,    field: 'email' },
               { label: 'Password',  value: auditor.password, field: 'password' },
               { label: 'Instansi',  value: auditor.instansi, field: null },
-              { label: 'URL Login', value: 'localhost:5173/login', field: 'url' },
             ].map(item => (
               <div key={item.label}
                 className="flex items-center justify-between gap-3">
@@ -350,6 +354,7 @@ function ModalLihatKredensial({ auditor, outlets, onClose, onUpdate }) {
   
   const [isEditing, setIsEditing] = useState(false)
   const [nama, setNama]           = useState(auditor.nama || '')
+  const [newPassword, setNewPassword] = useState('')
   const [outletIds, setOutletIds] = useState(auditor.outlet_ids || [])
   const [fotoFile, setFotoFile]   = useState(null)
   const [fotoPreview, setFotoPreview] = useState(auditor.foto || null)
@@ -374,7 +379,12 @@ function ModalLihatKredensial({ auditor, outlets, onClose, onUpdate }) {
     setLoading(true)
     try {
       const fd = new FormData()
+      fd.append('_method', 'PUT')
       fd.append('name', nama)
+      if (newPassword) {
+        fd.append('password', newPassword)
+        fd.append('password_confirmation', newPassword)
+      }
       outletIds.forEach(id => fd.append('outlet_ids[]', id))
       if (fotoFile) fd.append('avatar', fotoFile)
       
@@ -427,6 +437,10 @@ function ModalLihatKredensial({ auditor, outlets, onClose, onUpdate }) {
               <div>
                 <label className="text-zinc-700 text-xs font-bold mb-1.5 block">Nama Auditor</label>
                 <input type="text" value={nama} onChange={e => setNama(e.target.value)} className="w-full border border-zinc-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-yellow-400" />
+              </div>
+              <div>
+                <label className="text-zinc-700 text-xs font-bold mb-1.5 block">Password Baru <span className="text-zinc-400 font-normal">(Kosongkan jika tidak ingin diubah)</span></label>
+                <input type="text" value={newPassword} onChange={e => setNewPassword(e.target.value)} placeholder="Min. 8 karakter" className="w-full border border-zinc-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-yellow-400" />
               </div>
               <div>
                 <label className="text-zinc-700 text-xs font-bold mb-1.5 block">Assign ke Outlet</label>

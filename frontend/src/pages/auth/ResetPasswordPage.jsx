@@ -1,14 +1,13 @@
 import { useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import api from '../../services/api'
 
 const ResetPasswordPage = () => {
     const navigate = useNavigate();
-    const [searchParams] = useSearchParams();
-    const token = searchParams.get('token');
-    const email = searchParams.get('email');
+    const location = useLocation();
+    const defaultEmail = location.state?.email || '';
 
-    const [form, setForm] = useState({ password: '', password_confirmation: '' });
+    const [form, setForm] = useState({ email: defaultEmail, otp_code: '', password: '', password_confirmation: '' });
     const [show, setShow] = useState({ password: false, confirm: false });
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
@@ -16,6 +15,14 @@ const ResetPasswordPage = () => {
 
     const handleChange = (e) => {
         setForm({ ...form, [e.target.name]: e.target.value });
+        setError('');
+    };
+
+    const handleOtpChange = (e) => {
+        const val = e.target.value.replace(/[^0-9]/g, '');
+        if (val.length <= 6) {
+            setForm({ ...form, otp_code: val });
+        }
         setError('');
     };
 
@@ -28,16 +35,16 @@ const ResetPasswordPage = () => {
         setLoading(true);
         setError('');
         try {
-            await api.post('/auth/reset-password', {
-                token,
-                email,
-                password: form.password,
-                password_confirmation: form.password_confirmation,
-            });
+            await api.post('/auth/reset-password', form);
             setSuccess('Password berhasil direset! Silakan login dengan password baru.');
             setTimeout(() => navigate('/login'), 2500);
         } catch (err) {
-            setError(err.response?.data?.message || 'Token tidak valid atau sudah kadaluarsa.');
+            if (err.response?.data?.errors) {
+                const firstError = Object.values(err.response.data.errors)[0][0];
+                setError(firstError);
+            } else {
+                setError(err.response?.data?.message || 'Kode OTP tidak valid atau kadaluarsa.');
+            }
         } finally {
             setLoading(false);
         }
@@ -83,6 +90,13 @@ const ResetPasswordPage = () => {
                     transition: border-color 0.2s;
                 }
                 .field-input:focus { border-color: #111; }
+                .otp-input {
+                    width: 100%; border: none; border-bottom: 2px solid #111;
+                    padding: 0.6rem 0; font-family: 'DM Sans', sans-serif;
+                    font-size: 1.5rem; font-weight: bold; color: #111; outline: none;
+                    background: transparent; transition: border-color 0.2s;
+                    text-align: center; letter-spacing: 1rem;
+                }
                 .eye-btn {
                     position: absolute; right: 0; top: 50%; transform: translateY(-50%);
                     background: none; border: none; cursor: pointer; color: #aaa;
@@ -121,14 +135,40 @@ const ResetPasswordPage = () => {
                 <div className="center">
                     <div className="card">
                         <div className="card-title">Reset Password</div>
-                        <div className="card-sub">Aduh, Jangan Lupa Lagi Ya!</div>
+                        <div className="card-sub">Silahkan masukkan OTP dan Password Baru.</div>
 
                         {error && <div className="alert-error"><span>⚠️</span> {error}</div>}
                         {success && <div className="alert-success"><span>✅</span> {success}</div>}
 
                         <form onSubmit={handleSubmit}>
                             <div className="field">
-                                <label className="field-label">Password</label>
+                                <label className="field-label">Email</label>
+                                <input
+                                    type="email"
+                                    name="email"
+                                    className="field-input"
+                                    value={form.email}
+                                    onChange={handleChange}
+                                    required
+                                    disabled={!!defaultEmail}
+                                />
+                            </div>
+
+                            <div className="field">
+                                <label className="field-label">Kode OTP</label>
+                                <input
+                                    type="text"
+                                    name="otp_code"
+                                    className="otp-input"
+                                    value={form.otp_code}
+                                    onChange={handleOtpChange}
+                                    placeholder="••••••"
+                                    required
+                                />
+                            </div>
+
+                            <div className="field">
+                                <label className="field-label">Password Baru</label>
                                 <div className="field-wrap">
                                     <input
                                         type={show.password ? 'text' : 'password'}

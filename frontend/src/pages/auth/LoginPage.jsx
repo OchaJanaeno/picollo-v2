@@ -26,30 +26,31 @@ const LoginPage = () => {
             const res = await api.post('/auth/login', form);
             let { user, token } = res.data.data;
 
-            // FIX: Fetch outlets setelah login supaya dashboard tidak kosong
-            // /auth/me sudah return outlets di response-nya dan juga avatar_url
+            // FIX: Set Auth di store dulu supaya interceptor api pakai token baru
+            setAuth(user, token, []);
+
             let outlets = [];
             try {
-                const meRes = await api.get('/auth/me', {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
+                // Sekarang api.get akan otomatis pakai token baru karena sudah di setAuth
+                const meRes = await api.get('/auth/me');
                 const fullUser = meRes.data.data;
-                user = { ...user, ...fullUser }; // Merge supaya avatar_url dsb masuk
+                user = { ...user, ...fullUser };
                 outlets = fullUser?.outlets || [];
-            } catch { /* outlets tetap [] kalau gagal */ }
-
-            setAuth(user, token, outlets);
+                setAuth(user, token, outlets); // Update dengan data lengkap
+            } catch { /* biarkan default kalau gagal */ }
 
             const dest =
                 user.role === 'admin'   ? '/admin/dashboard'   :
                 user.role === 'kasir'   ? '/kasir/dashboard'   :
                 user.role === 'auditor' ? '/auditor/dashboard' : '/login';
 
-            // setTimeout(0) supaya React selesai commit setAuth ke store dulu
-            // sebelum navigate, mencegah ProtectedRoute redirect lebih cepat dari state update
             setTimeout(() => navigate(dest, { replace: true }), 0);
         } catch (err) {
-            setError(err.response?.data?.message || 'Email atau password salah.');
+            if (err.response?.status === 403 && err.response?.data?.requires_verification) {
+                navigate('/verify-email', { state: { email: form.email, message: err.response.data.message } });
+            } else {
+                setError(err.response?.data?.message || 'Email atau password salah.');
+            }
         } finally {
             setLoading(false);
         }

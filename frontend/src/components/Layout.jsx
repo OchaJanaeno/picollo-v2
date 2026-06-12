@@ -107,12 +107,12 @@ function SidebarContent({ nav, collapsed, onClose }) {
         {collapsed ? (
           <Link to={`/${role === 'kasir' ? 'kasir' : role === 'auditor' ? 'auditor' : 'admin'}/dashboard`} className="block cursor-pointer hover:opacity-80 transition-opacity">
             <img src="/PicolloLogo.png" alt="P"
-              className="w-8 h-8 p-1 rounded-xl object-contain bg-yellow-400"
+              className="w-8 h-8 rounded-xl object-cover bg-white"
               onError={e => {
                 e.target.style.display = 'none'
                 e.target.nextSibling.style.display = 'flex'
               }}/>
-            <div className="w-8 h-8 rounded-xl bg-yellow-400 items-center justify-center"
+            <div className="w-8 h-8 rounded-xl bg-white items-center justify-center"
               style={{ display: 'none' }}>
               <span className="text-yellow-500 font-black text-sm">P</span>
             </div>

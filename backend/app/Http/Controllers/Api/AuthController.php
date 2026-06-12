@@ -11,11 +11,12 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
-use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Validation\Rules\Password as PasswordRule;
 use Tymon\JWTAuth\Facades\JWTAuth;
 use Tymon\JWTAuth\Exceptions\JWTException;
 use App\Models\AuditLog;
+use App\Mail\SendOtpMail;
+use Illuminate\Support\Facades\Mail;
 
 class AuthController extends Controller
 {
@@ -29,6 +30,10 @@ class AuthController extends Controller
                 'required',
                 'confirmed',
                 PasswordRule::min(8)
+                    ->letters()
+                    ->mixedCase()
+                    ->numbers()
+                    ->symbols()
             ],
             'nama_bisnis' => 'required|string|max:255',
         ], [
@@ -36,6 +41,12 @@ class AuthController extends Controller
             'email.required'       => 'Email wajib diisi.',
             'email.unique'         => 'Email sudah terdaftar.',
             'password.required'    => 'Password wajib diisi.',
+            'password.min'         => 'Password minimal 8 karakter.',
+            'password.letters'     => 'Password harus mengandung huruf.',
+            'password.mixed'       => 'Password harus mengandung huruf besar dan kecil.',
+            'password.numbers'     => 'Password harus mengandung angka.',
+            'password.symbols'     => 'Password harus mengandung simbol.',
+            'password.confirmed'   => 'Konfirmasi password tidak cocok.',
             'nama_bisnis.required' => 'Nama bisnis wajib diisi.',
         ]);
 
@@ -63,24 +74,22 @@ class AuthController extends Controller
 
         $user->outlets()->attach($outlet->id);
 
-        $token = JWTAuth::fromUser($user);
+        $otp = str_pad(rand(0, 999999), 6, '0', STR_PAD_LEFT);
+        $user->otp_code = $otp;
+        $user->otp_expires_at = now()->addMinutes(5);
+        $user->save();
+
+        try {
+            Mail::to($user->email)->send(new SendOtpMail($otp, 'Verifikasi Email Registrasi'));
+        } catch (\Exception $e) {
+            \Log::error('Failed to send OTP email: ' . $e->getMessage());
+        }
 
         return response()->json([
             'success' => true,
-            'message' => 'Registrasi berhasil!',
+            'message' => 'Registrasi berhasil! Silakan periksa email Anda untuk kode OTP verifikasi.',
             'data'    => [
-                'user'   => [
-                    'id'    => $user->id,
-                    'name'  => $user->name,
-                    'email' => $user->email,
-                    'role'  => $user->getRoleNames()->first(),
-                ],
-                'outlet' => [
-                    'id'          => $outlet->id,
-                    'nama'        => $outlet->nama,
-                    'kode_outlet' => $outlet->kode_outlet,
-                ],
-                'token' => $token,
+                'email' => $user->email
             ]
         ], 201);
     }
@@ -121,6 +130,17 @@ class AuthController extends Controller
         }
 
         $user = JWTAuth::user();
+
+        if (is_null($user->email_verified_at)) {
+            JWTAuth::invalidate($token);
+            return response()->json([
+                'success' => false,
+                'message' => 'Silakan verifikasi email Anda terlebih dahulu.',
+                'requires_verification' => true,
+                'email' => $user->email
+            ], 403);
+        }
+
         $user->update(['last_login_at' => now()]);
 
         // Log login activity
@@ -272,6 +292,89 @@ class AuthController extends Controller
         }
     }
 
+    // VERIFY EMAIL
+    public function verifyEmail(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'email'    => 'required|email',
+            'otp_code' => 'required|string|size:6',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validasi gagal.',
+                'errors'  => $validator->errors()
+            ], 422);
+        }
+
+        $user = User::where('email', $request->email)->first();
+
+        if (!$user) {
+            return response()->json(['success' => false, 'message' => 'User tidak ditemukan.'], 404);
+        }
+
+        if ($user->otp_code !== $request->otp_code) {
+            return response()->json(['success' => false, 'message' => 'Kode OTP tidak valid.'], 400);
+        }
+
+        if (now()->greaterThan($user->otp_expires_at)) {
+            return response()->json(['success' => false, 'message' => 'Kode OTP sudah kadaluarsa.'], 400);
+        }
+
+        $user->email_verified_at = now();
+        $user->otp_code = null;
+        $user->otp_expires_at = null;
+        $user->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Email berhasil diverifikasi! Silakan login.'
+        ]);
+    }
+
+    // RESEND OTP
+    public function resendOtp(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'email' => 'required|email',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validasi gagal.',
+                'errors'  => $validator->errors()
+            ], 422);
+        }
+
+        $user = User::where('email', $request->email)->first();
+
+        if (!$user) {
+            return response()->json(['success' => false, 'message' => 'User tidak ditemukan.'], 404);
+        }
+
+        if ($user->email_verified_at) {
+            return response()->json(['success' => false, 'message' => 'Email sudah diverifikasi.'], 400);
+        }
+
+        $otp = str_pad(rand(0, 999999), 6, '0', STR_PAD_LEFT);
+        $user->otp_code = $otp;
+        $user->otp_expires_at = now()->addMinutes(5);
+        $user->save();
+
+        try {
+            Mail::to($user->email)->send(new SendOtpMail($otp, 'Verifikasi Email Registrasi'));
+        } catch (\Exception $e) {
+            \Log::error('Failed to send OTP email: ' . $e->getMessage());
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Kode OTP baru telah dikirim ke email Anda.'
+        ]);
+    }
+
     // FORGOT PASSWORD
     public function forgotPassword(Request $request)
     {
@@ -290,11 +393,29 @@ class AuthController extends Controller
             ], 422);
         }
 
-        Password::sendResetLink($request->only('email'));
+        $user = User::where('email', $request->email)->first();
+        if (!$user) {
+            // Tetap berikan respon sukses demi keamanan
+            return response()->json([
+                'success' => true,
+                'message' => 'Jika email terdaftar, kode OTP telah dikirim.',
+            ]);
+        }
+
+        $otp = str_pad(rand(0, 999999), 6, '0', STR_PAD_LEFT);
+        $user->otp_code = $otp;
+        $user->otp_expires_at = now()->addMinutes(5);
+        $user->save();
+
+        try {
+            Mail::to($user->email)->send(new SendOtpMail($otp, 'Reset Password'));
+        } catch (\Exception $e) {
+            \Log::error('Failed to send OTP email: ' . $e->getMessage());
+        }
 
         return response()->json([
             'success' => true,
-            'message' => 'Jika email terdaftar, link reset password telah dikirim.',
+            'message' => 'Jika email terdaftar, kode OTP telah dikirim.',
         ]);
     }
 
@@ -302,17 +423,27 @@ class AuthController extends Controller
     public function resetPassword(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'token'    => 'required',
+            'otp_code' => 'required|string|size:6',
             'email'    => 'required|email',
             'password' => [
                 'required',
                 'confirmed',
                 PasswordRule::min(8)
+                    ->letters()
+                    ->mixedCase()
+                    ->numbers()
+                    ->symbols()
             ],
         ], [
-            'token.required'    => 'Token reset tidak valid.',
+            'otp_code.required' => 'Kode OTP wajib diisi.',
             'email.required'    => 'Email wajib diisi.',
             'password.required' => 'Password baru wajib diisi.',
+            'password.min'      => 'Password minimal 8 karakter.',
+            'password.letters'  => 'Password harus mengandung huruf.',
+            'password.mixed'    => 'Password harus mengandung huruf besar dan kecil.',
+            'password.numbers'  => 'Password harus mengandung angka.',
+            'password.symbols'  => 'Password harus mengandung simbol.',
+            'password.confirmed'=> 'Konfirmasi password tidak cocok.',
         ]);
 
         if ($validator->fails()) {
@@ -323,27 +454,92 @@ class AuthController extends Controller
             ], 422);
         }
 
-        $status = Password::reset(
-            $request->only('email', 'password', 'password_confirmation', 'token'),
-            function (User $user, string $password) {
-                $user->forceFill([
-                    'password'       => Hash::make($password),
-                    'remember_token' => Str::random(60),
-                ])->save();
-            }
-        );
+        $user = User::where('email', $request->email)->first();
 
-        if ($status === Password::PASSWORD_RESET) {
+        if (!$user) {
             return response()->json([
-                'success' => true,
-                'message' => 'Password berhasil direset. Silakan login dengan password baru.',
-            ]);
+                'success' => false,
+                'message' => 'User tidak ditemukan.',
+            ], 404);
         }
 
+        if ($user->otp_code !== $request->otp_code) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Kode OTP tidak valid.',
+            ], 400);
+        }
+
+        if (now()->greaterThan($user->otp_expires_at)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Kode OTP sudah kadaluarsa.',
+            ], 400);
+        }
+
+        $user->password = Hash::make($request->password);
+        $user->otp_code = null;
+        $user->otp_expires_at = null;
+        $user->save();
+
         return response()->json([
-            'success' => false,
-            'message' => 'Token tidak valid atau sudah kadaluarsa.',
-            'errors'  => ['token' => [__($status)]]
-        ], 422);
+            'success' => true,
+            'message' => 'Password berhasil direset. Silakan login dengan password baru.',
+        ]);
+    }
+
+    // UPDATE PASSWORD (AUTHENTICATED)
+    public function updatePassword(Request $request)
+    {
+        $user = JWTAuth::user();
+
+        $validator = Validator::make($request->all(), [
+            'old_password' => 'required',
+            'password'     => [
+                'required',
+                'confirmed',
+                PasswordRule::min(8)
+                    ->letters()
+                    ->mixedCase()
+                    ->numbers()
+                    ->symbols()
+            ],
+        ], [
+            'old_password.required' => 'Password lama wajib diisi.',
+            'password.required'     => 'Password baru wajib diisi.',
+            'password.min'          => 'Password minimal 8 karakter.',
+            'password.letters'      => 'Password harus mengandung huruf.',
+            'password.mixed'        => 'Password harus mengandung huruf besar dan kecil.',
+            'password.numbers'      => 'Password harus mengandung angka.',
+            'password.symbols'      => 'Password harus mengandung simbol.',
+            'password.confirmed'    => 'Konfirmasi password tidak cocok.',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validasi gagal.',
+                'errors'  => $validator->errors()
+            ], 422);
+        }
+
+        if (!Hash::check($request->old_password, $user->password)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Password lama salah.',
+                'errors'  => [
+                    'old_password' => ['Password lama salah.']
+                ]
+            ], 422);
+        }
+
+        $user->update([
+            'password' => Hash::make($request->password)
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Password berhasil diperbarui.'
+        ]);
     }
 }
