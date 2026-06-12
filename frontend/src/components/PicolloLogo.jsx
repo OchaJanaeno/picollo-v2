@@ -13,7 +13,7 @@ export default function PicolloLogo({ size = 'md', showText = true, className = 
         <img
           src="/PicolloLogo.png"
           alt="Picollo"
-          className={`${s.img} p-1 rounded-xl object-contain bg-yellow-400`}
+          className={`${s.img} rounded-xl object-cover bg-white`}
           onError={(e) => {
             e.target.style.display = 'none'
             e.target.nextElementSibling.style.display = 'flex'
@@ -21,7 +21,7 @@ export default function PicolloLogo({ size = 'md', showText = true, className = 
         />
         {/* Fallback kalau gambar gagal load */}
         <div
-          className={`${s.img} rounded-xl bg-yellow-400 items-center justify-center`}
+          className={`${s.img} rounded-xl bg-white items-center justify-center`}
           style={{ display: 'none' }}>
           <span className="text-red-800 font-black"
             style={{ fontSize: size === 'sm' ? 14 : 18 }}>

@@ -19,6 +19,7 @@ class KasirController extends Controller
         $outletIds = $request->user()->outlets()->pluck('outlets.id');
 
         $kasirList = User::role('kasir')
+            ->whereDoesntHave('roles', fn($q) => $q->where('name', 'admin'))
             ->whereHas('outlets', fn($q) => $q->whereIn('outlets.id', $outletIds))
             ->with('outlets:id,nama,kode_outlet')
             ->get()
@@ -31,6 +32,7 @@ class KasirController extends Controller
                 'last_login_at' => $k->last_login_at,
                 'outlets'       => $k->outlets,
                 'created_at'    => $k->created_at,
+                'avatar_url'    => $k->avatar_url,
             ]);
 
         return response()->json([
@@ -45,6 +47,7 @@ class KasirController extends Controller
         $outletIds = $request->user()->outlets()->pluck('outlets.id');
 
         $kasir = User::role('kasir')
+            ->whereDoesntHave('roles', fn($q) => $q->where('name', 'admin'))
             ->whereHas('outlets', fn($q) => $q->whereIn('outlets.id', $outletIds))
             ->with('outlets:id,nama,kode_outlet')
             ->find($id);
@@ -79,13 +82,23 @@ class KasirController extends Controller
             ],
             'no_telepon' => 'nullable|string|max:20',
             'outlet_id'  => 'required|integer|exists:outlets,id',
+            'avatar'     => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
         ], [
             'name.required'      => 'Nama kasir wajib diisi.',
             'email.required'     => 'Email wajib diisi.',
             'email.unique'       => 'Email sudah terdaftar.',
             'password.required'  => 'Password wajib diisi.',
+            'password.min'       => 'Password minimal 8 karakter.',
+            'password.letters'   => 'Password harus mengandung huruf.',
+            'password.mixed'     => 'Password harus mengandung huruf besar dan kecil.',
+            'password.numbers'   => 'Password harus mengandung angka.',
+            'password.symbols'   => 'Password harus mengandung simbol.',
+            'password.confirmed' => 'Konfirmasi password tidak cocok.',
             'outlet_id.required' => 'Outlet wajib dipilih.',
             'outlet_id.exists'   => 'Outlet tidak ditemukan.',
+            'avatar.image'       => 'File harus berupa gambar.',
+            'avatar.mimes'       => 'Format gambar harus jpeg, png, atau jpg.',
+            'avatar.max'         => 'Ukuran gambar maksimal 2MB.',
         ]);
 
         if ($validator->fails()) {
@@ -104,16 +117,33 @@ class KasirController extends Controller
             ], 403);
         }
 
+        $avatarUrl = null;
+        if ($request->hasFile('avatar')) {
+            $file = $request->file('avatar');
+            $filename = 'avatar_' . uniqid() . '_' . time() . '.' . $file->getClientOriginalExtension();
+            $file->move(public_path('avatars'), $filename);
+            $avatarUrl = url('avatars/' . $filename);
+        }
+
         $kasir = User::create([
             'name'       => $request->name,
             'email'      => $request->email,
             'password'   => Hash::make($request->password),
             'no_telepon' => $request->no_telepon,
             'is_active'  => true,
+            'email_verified_at' => now(),
+            'avatar_url' => $avatarUrl,
         ]);
 
         $kasir->assignRole('kasir');
         $kasir->outlets()->attach($request->outlet_id);
+
+        try {
+            $loginUrl = config('app.frontend_url') . '/login';
+            \Illuminate\Support\Facades\Mail::to($kasir->email)->send(new \App\Mail\AccountCreatedMail($request->email, $request->password, 'Kasir', $loginUrl));
+        } catch (\Exception $e) {
+            \Log::error('Failed to send account created email: ' . $e->getMessage());
+        }
 
         return response()->json([
             'success' => true,
@@ -124,6 +154,7 @@ class KasirController extends Controller
                 'email'      => $kasir->email,
                 'no_telepon' => $kasir->no_telepon,
                 'outlet_id'  => $request->outlet_id,
+                'avatar_url' => $kasir->avatar_url,
             ],
         ], 201);
     }
@@ -134,6 +165,7 @@ class KasirController extends Controller
         $outletIds = $request->user()->outlets()->pluck('outlets.id');
 
         $kasir = User::role('kasir')
+            ->whereDoesntHave('roles', fn($q) => $q->where('name', 'admin'))
             ->whereHas('outlets', fn($q) => $q->whereIn('outlets.id', $outletIds))
             ->find($id);
 
@@ -159,6 +191,14 @@ class KasirController extends Controller
                     ->numbers()
                     ->symbols()
             ],
+        ], [
+            'name.required'      => 'Nama kasir wajib diisi.',
+            'password.min'       => 'Password minimal 8 karakter.',
+            'password.letters'   => 'Password harus mengandung huruf.',
+            'password.mixed'     => 'Password harus mengandung huruf besar dan kecil.',
+            'password.numbers'   => 'Password harus mengandung angka.',
+            'password.symbols'   => 'Password harus mengandung simbol.',
+            'password.confirmed' => 'Konfirmasi password tidak cocok.',
         ]);
 
         if ($validator->fails()) {
@@ -217,6 +257,7 @@ class KasirController extends Controller
         $outletIds = $request->user()->outlets()->pluck('outlets.id');
 
         $kasir = User::role('kasir')
+            ->whereDoesntHave('roles', fn($q) => $q->where('name', 'admin'))
             ->whereHas('outlets', fn($q) => $q->whereIn('outlets.id', $outletIds))
             ->find($id);
 
@@ -242,6 +283,7 @@ class KasirController extends Controller
         $outletIds = $request->user()->outlets()->pluck('outlets.id');
 
         $kasir = User::role('kasir')
+            ->whereDoesntHave('roles', fn($q) => $q->where('name', 'admin'))
             ->whereHas('outlets', fn($q) => $q->whereIn('outlets.id', $outletIds))
             ->find($id);
 

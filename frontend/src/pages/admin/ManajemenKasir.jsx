@@ -56,14 +56,16 @@ function ModalBuatKasir({ outlets, onClose, onSave }) {
     if (Object.keys(e).length) { setErrors(e); return }
     setLoading(true)
     try {
-      const payload = {
-        name: form.nama,
-        email: form.email,
-        password: form.password,
-        password_confirmation: form.password,
-        outlet_id: parseInt(form.outlet_id),
+      const fd = new FormData()
+      fd.append('name', form.nama)
+      fd.append('email', form.email)
+      fd.append('password', form.password)
+      fd.append('password_confirmation', form.password)
+      fd.append('outlet_id', form.outlet_id)
+      if (foto) {
+        fd.append('avatar', foto)
       }
-      const res = await kasirService.create(payload)
+      const res = await kasirService.create(fd)
       const newKasirObj = {
         id: res.data.data.id,
         nama: res.data.data.name,
@@ -72,7 +74,7 @@ function ModalBuatKasir({ outlets, onClose, onSave }) {
         bergabung: new Date().toLocaleDateString('id-ID'),
         status: 'aktif',
         total_transaksi: 0,
-        foto: null,
+        foto: res.data.data.avatar_url || null,
         password_plain: form.password,
       }
       onSave(newKasirObj)
@@ -323,6 +325,7 @@ function ModalLihatKredensial({ kasir, onClose, onUpdate }) {
   
   const [isEditing, setIsEditing] = useState(false)
   const [nama, setNama]           = useState(kasir.nama || '')
+  const [newPassword, setNewPassword] = useState('')
   const [fotoFile, setFotoFile]   = useState(null)
   const [fotoPreview, setFotoPreview] = useState(kasir.foto || null)
   const [loading, setLoading]     = useState(false)
@@ -346,7 +349,12 @@ function ModalLihatKredensial({ kasir, onClose, onUpdate }) {
     setLoading(true)
     try {
       const fd = new FormData()
+      fd.append('_method', 'PUT')
       fd.append('name', nama)
+      if (newPassword) {
+        fd.append('password', newPassword)
+        fd.append('password_confirmation', newPassword)
+      }
       if (fotoFile) fd.append('avatar', fotoFile)
       
       const res = await kasirService.update(kasir.id, fd)
@@ -396,6 +404,10 @@ function ModalLihatKredensial({ kasir, onClose, onUpdate }) {
               <div>
                 <label className="text-zinc-700 text-xs font-bold mb-1.5 block">Nama Kasir</label>
                 <input type="text" value={nama} onChange={e => setNama(e.target.value)} className="w-full border border-zinc-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-yellow-400" />
+              </div>
+              <div>
+                <label className="text-zinc-700 text-xs font-bold mb-1.5 block">Password Baru <span className="text-zinc-400 font-normal">(Kosongkan jika tidak ingin diubah)</span></label>
+                <input type="text" value={newPassword} onChange={e => setNewPassword(e.target.value)} placeholder="Min. 8 karakter" className="w-full border border-zinc-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-yellow-400" />
               </div>
               <button onClick={handleSave} disabled={loading} className="w-full bg-yellow-400 hover:bg-yellow-500 text-zinc-900 font-semibold py-2 rounded-xl text-sm mt-2">
                 {loading ? 'Menyimpan...' : 'Simpan Perubahan'}
@@ -486,6 +498,7 @@ export default function AdminManajemenKasir() {
         total_transaksi: k.total_transaksi || 0,
         status: k.is_active ? 'aktif' : 'nonaktif',
         password_plain: '',
+        foto: k.avatar_url,
       }))
       setData(mappedKasir)
     } catch {
