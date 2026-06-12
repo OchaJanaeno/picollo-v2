@@ -16,7 +16,7 @@ const ForgotPasswordPage = () => {
         setSuccess('');
         try {
             await api.post('/auth/forgot-password', { email });
-            setSuccess('Link reset password sudah dikirim! Cek inbox atau folder spam emailmu ya.');
+            navigate('/reset-password', { state: { email } });
         } catch (err) {
             setError(err.response?.data?.message || 'Terjadi kesalahan. Coba lagi.');
         } finally {

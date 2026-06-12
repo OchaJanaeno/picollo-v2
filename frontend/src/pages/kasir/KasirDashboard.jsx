@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import Layout from '../../components/Layout'
 import { transaksiService } from '../../services/transaksiService'
 
@@ -11,18 +12,23 @@ export default function KasirDashboard() {
   const [stats, setStats] = useState(null)
   const [recentTx, setRecentTx] = useState([])
   const [loading, setLoading] = useState(true)
-
-  useEffect(() => { fetchData() }, [])
-
-  const fetchData = async () => {
+  async function fetchData() {
     setLoading(true)
     try {
-      const res = await transaksiService.getAll()
-      const allTx = res.data.data?.data || res.data.data || []
+      // Ambil seluruh transaksi
+      const res = await transaksiService.getAll({ all: true })
+      const rawTx = res.data.data?.data || res.data.data || []
       
-      // Filter transaksi hari ini
-      const today = new Date().toISOString().split('T')[0]
-      const todayTx = allTx.filter(tx => tx.created_at?.startsWith(today))
+      // Abaikan transaksi yang berstatus voided di sisi kasir (hanya tampil di log pembatalan admin)
+      const allTx = rawTx.filter(tx => tx.status !== 'voided')
+      
+      // Filter transaksi hari ini berdasarkan tanggal lokal
+      const todayLocal = new Date().toLocaleDateString('sv-SE')
+      const todayTx = allTx.filter(tx => {
+        if (!tx.created_at) return false
+        const txDate = new Date(tx.created_at).toLocaleDateString('sv-SE')
+        return txDate === todayLocal
+      })
       
       const totalOmzet = todayTx.reduce((sum, tx) => sum + (Number(tx.total_amount) || 0), 0)
       const qrisCount = todayTx.filter(tx => tx.metode_pembayaran === 'qris').length
@@ -49,6 +55,8 @@ export default function KasirDashboard() {
     }
     finally { setLoading(false) }
   }
+
+  useEffect(() => { fetchData() }, [])
 
   const statCards = [
     { label: 'Transaksi Hari Ini', value: stats?.total_transaksi ?? '-', color: 'bg-yellow-400' },
@@ -79,7 +87,7 @@ export default function KasirDashboard() {
         <div className="bg-white rounded-2xl border border-zinc-200 overflow-hidden">
           <div className="flex items-center justify-between px-5 py-4 border-b border-zinc-100">
             <h3 className="font-bold text-zinc-900 text-sm">Transaksi Terbaru Hari Ini</h3>
-            <a href="/kasir/rekap" className="text-yellow-600 text-xs font-semibold hover:underline">Lihat rekap →</a>
+            <Link to="/kasir/rekap" className="text-yellow-600 text-xs font-semibold hover:underline">Lihat rekap →</Link>
           </div>
           {loading ? (
             <div className="p-5 space-y-3">{[...Array(3)].map((_, i) => <div key={i} className="h-10 bg-zinc-100 rounded-xl animate-pulse" />)}</div>

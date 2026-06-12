@@ -39,6 +39,10 @@ class ProductController extends Controller
                         $product->modal = $pivot->modal;
                     }
                 }
+                // Sembunyikan field modal jika user adalah kasir
+                if ($request->user()->hasRole('kasir')) {
+                    $product->makeHidden(['modal']);
+                }
             }
         }
 
@@ -72,6 +76,9 @@ class ProductController extends Controller
                 if ($pivot->modal !== null) {
                     $product->modal = $pivot->modal;
                 }
+            }
+            if ($product && $request->user()->hasRole('kasir')) {
+                $product->makeHidden(['modal']);
             }
         }
 

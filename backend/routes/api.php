@@ -21,14 +21,16 @@ Route::prefix('auth')->middleware('throttle:10,1')->group(function () {
     Route::post('/login',           [AuthController::class, 'login']);
     Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
     Route::post('/reset-password',  [AuthController::class, 'resetPassword']);
+    Route::post('/verify-email',    [AuthController::class, 'verifyEmail']);
+    Route::post('/resend-otp',      [AuthController::class, 'resendOtp']);
 });
 
-// Protected routes
 Route::middleware('auth:api')->group(function () {
     Route::prefix('auth')->group(function () {
         Route::post('/logout',  [AuthController::class, 'logout']);
         Route::get('/me',       [AuthController::class, 'me']);
         Route::post('/refresh', [AuthController::class, 'refresh']);
+        Route::post('/password', [AuthController::class, 'updatePassword']);
     });
 
     // Admin only
